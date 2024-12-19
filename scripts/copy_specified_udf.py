@@ -14,7 +14,7 @@ TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
 
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
-def main():
+def main(args):
     """This script will get the name of an artifact UDF from a master step field,
     and for every sample artifact in the current step:
 
@@ -27,7 +27,9 @@ def main():
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
 
-    target_udf = process.udf("step_udf")
+    target_udf = process.udf.get(args.step_udf, None)
+    if target_udf is None or target_udf == "None":
+        logging.error(f"No target UDF supplied from step field '{args.step_udf}'")
 
     no_outputs = udf_tools.no_outputs(process)
 
