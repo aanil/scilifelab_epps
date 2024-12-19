@@ -36,7 +36,9 @@ def main(args):
     if no_outputs:
         logging.info("Step has no output artifacts. Assigning to input artifact.")
 
-    art_tuples = udf_tools.get_art_tuples(process)
+    # TODO need to tweak this script and possible the traceback function to handle both
+    # TODO  aggregate QC and regular steps
+    art_tuples = udf_tools.get_art_tuples(process)  # TODO this returns []
     for art_tuple in art_tuples:
         target_artifact = art_tuple[0]["uri"] if no_outputs else art_tuple[1]["uri"]
         logging.info(
