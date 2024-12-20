@@ -33,7 +33,7 @@ def main(args):
     # Get the target UDF from the step field
     target_udf = process.udf.get(args.step_udf, None)
     assert (
-        target_udf is not None or target_udf != "None"
+        target_udf is not None and target_udf != "None"
     ), f"No target UDF supplied from step field '{args.step_udf}'"
 
     # Check whether process has output artifacts, not the case for e.g. QC steps
