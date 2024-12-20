@@ -77,7 +77,7 @@ def main(args):
             target_artifact.udf[target_udf] = udf_value
             target_artifact.put()
             logging.info(
-                f"Updated UDF '{target_udf}' for {'input' if no_outputs else 'output'} '{target_artifact.name}' to '{udf_value}'"
+                f"Updated UDF '{target_udf}' for {'input' if no_outputs else 'output'} artifact '{target_artifact.name}' to '{udf_value}'"
             )
         else:
             logging.warning(
