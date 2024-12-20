@@ -136,18 +136,35 @@ def list_udfs(art: Artifact) -> list:
 
 def fetch_last(
     currentStep: Process,
-    art_tuple: tuple,
     target_udfs: str | list,
+    art_tuple: tuple = None,
+    art: Artifact = None,
     use_current=True,
     print_history=False,
     on_fail=AssertionError,
 ):
     """Recursively look for target UDF.
 
-    Target UDF can be supplied as a string, or as a prioritized list of strings.
+    Arguments:
 
-    If "print_history" == True, will return both the target metric and the lookup history as a string.
+        - "art_tuple": step input-output tuple. Mutually exclusive use with "art".
+
+        - "art": step artifact, either input or output. Mutually exclusive use with "art_tuple".
+
+        - "target_udfs": can be supplied as a string, or as a
+            prioritized list of strings.
+
+        - "use_current": if true, will return the target metric
+            if found in the current step.
+
+        - "print_history": if true, will return both the target
+            metric and the lookup history as a string.
     """
+
+    assert art_tuple or art, "One of function args 'art_tuple' and 'art' are required."
+    assert not (
+        art_tuple and art
+    ), "Function args 'art_tuple' and 'art' are mutually exclusive."
 
     # Convert to list, to enable iteration
     if isinstance(target_udfs, str):
@@ -158,15 +175,19 @@ def fetch_last(
     while True:
         history.append({"Step name": currentStep.type.name, "Step ID": currentStep.id})
 
-        # Try to grab input and output articles, if possible
-        try:
-            input_art = art_tuple[0]["uri"]
-        except:
-            input_art = None
-        try:
-            output_art = art_tuple[1]["uri"]
-        except:
+        if len(history) == 1 and not art_tuple:
+            # Handle the case of having an art instead of an art_tuple in the original step
+            input_art = art
             output_art = None
+        else:
+            try:
+                input_art = art_tuple[0]["uri"]
+            except:
+                input_art = None
+            try:
+                output_art = art_tuple[1]["uri"]
+            except:
+                output_art = None
 
         if len(history) == 1 and use_current is not True:
             # If we are in the original step and "use_current" is false, skip
