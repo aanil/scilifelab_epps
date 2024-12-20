@@ -137,8 +137,8 @@ def list_udfs(art: Artifact) -> list:
 def fetch_last(
     currentStep: Process,
     target_udfs: str | list,
-    art_tuple: tuple = None,
-    art: Artifact = None,
+    art_tuple=None,
+    art=None,
     use_current=True,
     print_history=False,
     on_fail=AssertionError,
@@ -147,9 +147,9 @@ def fetch_last(
 
     Arguments:
 
-        - "art_tuple": step input-output tuple. Mutually exclusive use with "art".
+        - "art_tuple": step input-output tuple or none. Mutually exclusive use with "art".
 
-        - "art": step artifact, either input or output. Mutually exclusive use with "art_tuple".
+        - "art": step artifact, either input or output or none. Mutually exclusive use with "art_tuple".
 
         - "target_udfs": can be supplied as a string, or as a
             prioritized list of strings.
