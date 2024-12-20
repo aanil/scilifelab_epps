@@ -23,6 +23,9 @@ def main(args):
     - Copy the value of the specified UDF from the found artifact to the
         artifact of the current step
 
+    Example use-case:
+    - For Nanopore libraries in the Aggregate QC step of the Library Validation protocol,
+        fetch the last recorded artifact UDF "Size (bp)" from the library prep for all samples.
     """
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
