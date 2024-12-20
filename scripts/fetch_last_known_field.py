@@ -30,7 +30,7 @@ def main(args):
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
 
-    # Get the target UDF from the step field
+    # Get the name of the target UDF from the step field
     target_udf = process.udf.get(args.step_udf, None)
     assert (
         target_udf is not None and target_udf != "None"
@@ -49,8 +49,8 @@ def main(args):
         logging.info("Step has no output artifacts. Assigning to input artifact.")
     else:
         art_tuples: list[tuple[dict]] = process.input_output_maps
-        art_in2out: dict[Process.Artifact : Process.Artifact] = {
-            i["uri"]: o["uri"]
+        art_in2out: dict[str:Artifact] = {
+            i["uri"].id: o["uri"]
             for i, o in art_tuples
             if i["uri"].type == "Analyte" and o["uri"].type == "Analyte"
         }
@@ -59,13 +59,13 @@ def main(args):
         if no_outputs:
             target_artifact = art_in
         else:
-            target_artifact = art_in2out[art_in]
+            target_artifact = art_in2out[art_in.id]
         logging.info(
             f"Looking for last recorded UDF '{target_udf}' of {'input' if no_outputs else 'output'} artifact '{target_artifact.name}'..."
         )
         udf_value, udf_history = udf_tools.fetch_last(
             currentStep=process,
-            art=art_in,
+            art=target_artifact,
             target_udfs=target_udf,
             use_current=False,
             print_history=True,
@@ -77,11 +77,11 @@ def main(args):
             target_artifact.udf[target_udf] = udf_value
             target_artifact.put()
             logging.info(
-                f"Updated UDF '{target_udf}' for '{art_in.name}' to '{udf_value}'"
+                f"Updated UDF '{target_udf}' for {'input' if no_outputs else 'output'} '{target_artifact.name}' to '{udf_value}'"
             )
         else:
             logging.warning(
-                f"Could not traceback UDF '{target_udf}' for '{art_in.name}'"
+                f"Could not traceback UDF '{target_udf}' for {'input' if no_outputs else 'output'} artifact '{target_artifact.name}'"
             )
             logging.info(f"Traceback:\n{udf_history}")
 
