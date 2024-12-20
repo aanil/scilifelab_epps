@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20241220.1
+
+Introduce EPP to fetch last recorded derived sample UDF.
+
 ## 20241211.1
 
 No longer reserve PromethION column 3 for Clinical Genomics.
