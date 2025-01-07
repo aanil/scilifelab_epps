@@ -65,7 +65,7 @@ def main(args):
         logging.info(
             f"Looking for last recorded UDF '{target_udf}' of {'input' if no_outputs else 'output'} artifact '{target_artifact.name}'..."
         )
-        udf_value, udf_history = udf_tools.fetch_last(
+        udf_value, traceback = udf_tools.fetch_last(
             target_art=target_artifact,
             target_udfs=target_udf,
             log_traceback=True,
@@ -73,7 +73,10 @@ def main(args):
             on_fail=None,
         )
 
-        steps_used.append(udf_history[-1]["Artifact"]["Parent Step"]["Name"])
+        steps_used.append(
+            f"'{traceback[-1]['Artifact']['Parent Step']['Name']}'"
+            + f" ({traceback[-1]['Artifact']['Parent Step']['ID']})"
+        )
 
         if udf_value is not None:
             target_artifact.udf[target_udf] = udf_value
@@ -85,10 +88,11 @@ def main(args):
             logging.warning(
                 f"Could not traceback UDF '{target_udf}' for {'input' if no_outputs else 'output'} artifact '{target_artifact.name}'"
             )
-            logging.info(f"Traceback:\n{udf_history}")
+            logging.info(f"Traceback:\n{traceback}")
 
-        # TODO use variable
-        msg = f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
+        logging.warning(
+            f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
+        )
 
 
 if __name__ == "__main__":
