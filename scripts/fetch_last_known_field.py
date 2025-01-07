@@ -44,6 +44,9 @@ def main(args):
         art for art in process.all_inputs() if art.type == "Analyte"
     ]
 
+    # TODO currently even steps with valid tuples will only use input artifacts
+    # No traceback provided for output artifact of current step
+
     # Find target output artifacts, if any
     if no_outputs:
         logging.info("Step has no output artifacts. Assigning to input artifact.")

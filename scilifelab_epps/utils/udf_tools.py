@@ -172,10 +172,14 @@ def fetch_last(
 
     history = []
 
+    # Track iterations
+    n = 1
+
+    # Start traceback
     while True:
         history.append({"Step name": currentStep.type.name, "Step ID": currentStep.id})
 
-        if len(history) == 1 and not art_tuple:
+        if n == 1 and not art_tuple:
             # Handle the case of having an art instead of an art_tuple in the original step
             input_art = art
             output_art = None
@@ -189,20 +193,20 @@ def fetch_last(
             except:
                 output_art = None
 
-        if len(history) == 1 and use_current is not True:
-            # If we are in the original step and "use_current" is false, skip
-            pass
-        else:
-            # Look trough outputs
-            if output_art:
-                history[-1].update(
-                    {
-                        "Derived sample ID": output_art.id,
-                        "Derived sample UDFs": dict(output_art.udf.items()),
-                    }
-                )
+        # Look trough outputs
+        if output_art:
+            history[-1].update(
+                {
+                    "Derived sample ID": output_art.id,
+                    "Derived sample UDFs": dict(output_art.udf.items()),
+                }
+            )
 
-                for target_udf in target_udfs:
+            for target_udf in target_udfs:
+                # Don't search outputs of first and second iteration if use_current is False
+                if n in [1, 2] and use_current is False:
+                    pass
+                else:
                     if target_udf in list_udfs(output_art):
                         if print_history is True:
                             return output_art.udf[target_udf], json.dumps(
@@ -211,22 +215,26 @@ def fetch_last(
                         else:
                             return output_art.udf[target_udf]
 
-            # Look through inputs
-            if input_art:
-                if input_art.parent_process:
-                    history[-1].update(
-                        {
-                            "Input sample parent step name": input_art.parent_process.type.name,
-                            "Input sample parent step ID": input_art.parent_process.id,
-                        }
-                    )
+        # Look through inputs
+        if input_art:
+            if input_art.parent_process:
                 history[-1].update(
                     {
-                        "Input sample ID": input_art.id,
-                        "Input sample UDFs": dict(input_art.udf.items()),
+                        "Input sample parent step name": input_art.parent_process.type.name,
+                        "Input sample parent step ID": input_art.parent_process.id,
                     }
                 )
-                for target_udf in target_udfs:
+            history[-1].update(
+                {
+                    "Input sample ID": input_art.id,
+                    "Input sample UDFs": dict(input_art.udf.items()),
+                }
+            )
+            for target_udf in target_udfs:
+                # Don't search inputs of first iteration if use_current is False
+                if n == 1 and use_current is False:
+                    pass
+                else:
                     if target_udf in list_udfs(input_art):
                         if print_history is True:
                             return input_art.udf[target_udf], json.dumps(
@@ -264,6 +272,8 @@ def fetch_last(
             # Back-tracking successful, re-assign variables to represent previous step
             currentStep = pp
             art_tuple = matching_tuples[0]
+
+            n += 1
 
         except AssertionError:
             if isinstance(on_fail, type) and issubclass(on_fail, Exception):
