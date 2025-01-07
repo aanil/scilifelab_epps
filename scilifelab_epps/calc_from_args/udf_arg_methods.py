@@ -47,19 +47,13 @@ def fetch_from_arg(
             value = process.udf[arg_dict["udf"]]
         else:
             if arg_dict["recursive"]:
-                # Fetch UDF recursively, back-tracking the input-output tuple
-                if arg_dict["source"] == "input":
-                    use_current = False
-                else:
-                    assert arg_dict["source"] == "output"
-                    use_current = True
+                # Fetch UDF recursively
 
                 value, history = udf_tools.fetch_last(
-                    currentStep=process,
-                    art_tuple=art_tuple,
+                    target_art=source,
                     target_udfs=arg_dict["udf"],
-                    use_current=use_current,
-                    print_history=True,
+                    log_traceback=True,
+                    return_traceback=True,
                 )
             else:
                 # Fetch UDF from input or output artifact

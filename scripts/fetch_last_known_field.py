@@ -44,9 +44,6 @@ def main(args):
         art for art in process.all_inputs() if art.type == "Analyte"
     ]
 
-    # TODO currently even steps with valid tuples will only use input artifacts
-    # No traceback provided for output artifact of current step
-
     # Find target output artifacts, if any
     if no_outputs:
         logging.info("Step has no output artifacts. Assigning to input artifact.")
@@ -67,16 +64,14 @@ def main(args):
             f"Looking for last recorded UDF '{target_udf}' of {'input' if no_outputs else 'output'} artifact '{target_artifact.name}'..."
         )
         udf_value, udf_history = udf_tools.fetch_last(
-            currentStep=process,
-            art=target_artifact,
+            target_art=target_artifact,
             target_udfs=target_udf,
-            use_current=False,
-            print_history=True,
+            log_traceback=True,
+            return_traceback=True,
             on_fail=None,
         )
+        # TODO collect history for overview of which steps have been pulled from
         if udf_value:
-            logging.info(f"Found target UDF '{target_udf}' with value '{udf_value}'")
-            logging.info(f"Traceback:\n{udf_history}")
             target_artifact.udf[target_udf] = udf_value
             target_artifact.put()
             logging.info(

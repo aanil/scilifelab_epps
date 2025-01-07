@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Union
 
 from genologics.entities import Artifact, Process
@@ -37,22 +38,6 @@ def is_filled(art: Artifact, target_udf: str) -> bool:
         return True
     except KeyError:
         return False
-
-
-def no_outputs(currentStep: Process) -> bool:
-    """Check whether step has outputs or not"""
-
-    art_tuples = get_art_tuples(currentStep)
-
-    if art_tuples:
-        none_outputs = [t[1] is None for t in art_tuples]
-
-        if all(none_outputs):
-            return True
-        else:
-            return False
-    else:
-        return True
 
 
 def get_art_tuples(currentStep: Process) -> list:
@@ -135,156 +120,119 @@ def list_udfs(art: Artifact) -> list:
 
 
 def fetch_last(
-    currentStep: Process,
+    target_art: Artifact,
     target_udfs: str | list,
-    art_tuple=None,
-    art=None,
-    use_current=True,
-    print_history=False,
-    on_fail=AssertionError,
-):
+    log_traceback=False,
+    return_traceback=False,
+    on_fail=None,
+) -> (str | int | float) | tuple[str | int | float, dict]:
     """Recursively look for target UDF.
 
     Arguments:
 
-        - "art_tuple": step input-output tuple or none. Mutually exclusive use with "art".
+        target_art          Artifact to traceback and assign UDF value to.
 
-        - "art": step artifact, either input or output or none. Mutually exclusive use with "art_tuple".
+        target_udfs         Can be supplied as a string, or as a prioritized
+                            list of strings.
 
-        - "target_udfs": can be supplied as a string, or as a
-            prioritized list of strings.
+        log_traceback       If True, will log the full traceback.
 
-        - "use_current": if true, will return the target metric
-            if found in the current step.
+        return_traceback    If True, will return the traceback too.
 
-        - "print_history": if true, will return both the target
-            metric and the lookup history as a string.
+        on_fail             If not None, will return this value on failure.
     """
-
-    assert art_tuple or art, "One of function args 'art_tuple' and 'art' are required."
-    assert not (
-        art_tuple and art
-    ), "Function args 'art_tuple' and 'art' are mutually exclusive."
 
     # Convert to list, to enable iteration
     if isinstance(target_udfs, str):
         target_udfs = [target_udfs]
 
-    history = []
+    # Instantiate traceback
+    traceback = []
+    steps_visited = []
 
-    # Track iterations
-    n = 1
+    try:
+        # First iteration, current artifact is the target artifact. Don't pull any UDF values.
+        current_art = target_art
+        pp = current_art.parent_process
+        assert pp, f"Artifact '{current_art.name}' ({current_art.id}) has no parent process linked."
+        steps_visited.append(f"'{pp.type.name}' ({pp.id})")
 
-    # Start traceback
-    while True:
-        history.append({"Step name": currentStep.type.name, "Step ID": currentStep.id})
-
-        if n == 1 and not art_tuple:
-            # Handle the case of having an art instead of an art_tuple in the original step
-            input_art = art
-            output_art = None
-        else:
-            try:
-                input_art = art_tuple[0]["uri"]
-            except:
-                input_art = None
-            try:
-                output_art = art_tuple[1]["uri"]
-            except:
-                output_art = None
-
-        # Look trough outputs
-        if output_art:
-            history[-1].update(
-                {
-                    "Derived sample ID": output_art.id,
-                    "Derived sample UDFs": dict(output_art.udf.items()),
+        traceback.append(
+            {
+                "Artifact": {
+                    "Name": current_art.name,
+                    "ID": current_art.id,
+                    "UDFs": dict(current_art.udf.items()),
+                    "Parent Step": {
+                        "Name": pp.type.name if pp else None,
+                        "ID": pp.id if pp else None,
+                    },
                 }
-            )
+            }
+        )
 
-            for target_udf in target_udfs:
-                # Don't search outputs of first and second iteration if use_current is False
-                if n in [1, 2] and use_current is False:
-                    pass
-                else:
-                    if target_udf in list_udfs(output_art):
-                        if print_history is True:
-                            return output_art.udf[target_udf], json.dumps(
-                                history, indent=2
-                            )
-                        else:
-                            return output_art.udf[target_udf]
+        # Start recursive search
+        while True:
+            pp_art_tuples = get_art_tuples(pp)
 
-        # Look through inputs
-        if input_art:
-            if input_art.parent_process:
-                history[-1].update(
-                    {
-                        "Input sample parent step name": input_art.parent_process.type.name,
-                        "Input sample parent step ID": input_art.parent_process.id,
-                    }
-                )
-            history[-1].update(
-                {
-                    "Input sample ID": input_art.id,
-                    "Input sample UDFs": dict(input_art.udf.items()),
-                }
-            )
-            for target_udf in target_udfs:
-                # Don't search inputs of first iteration if use_current is False
-                if n == 1 and use_current is False:
-                    pass
-                else:
-                    if target_udf in list_udfs(input_art):
-                        if print_history is True:
-                            return input_art.udf[target_udf], json.dumps(
-                                history, indent=2
-                            )
-                        else:
-                            return input_art.udf[target_udf]
-
-        # Cycle to previous step, if possible
-        try:
-            pp = input_art.parent_process
-            assert pp is not None
-
-            pp_tuples = get_art_tuples(pp)
-            matching_tuples = []
-            for pp_tuple in pp_tuples:
-                try:
-                    pp_input = pp_tuple[0]["uri"]
-                except:
-                    pp_input = None
-                try:
-                    pp_output = pp_tuple[1]["uri"]
-                except:
-                    pp_output = None
-
-                if (pp_input and pp_input.id == input_art.id) or (
-                    pp_output and pp_output.id == input_art.id
-                ):
-                    matching_tuples.append(pp_tuple)
-
-            assert (
-                len(matching_tuples) == 1
-            ), "Target artifact matches multiple inputs/outputs in previous step."
-
-            # Back-tracking successful, re-assign variables to represent previous step
-            currentStep = pp
-            art_tuple = matching_tuples[0]
-
-            n += 1
-
-        except AssertionError:
-            if isinstance(on_fail, type) and issubclass(on_fail, Exception):
-                if print_history is True:
-                    print(json.dumps(history, indent=2))
-                raise on_fail(
-                    f"Could not find matching UDF(s) [{', '.join(target_udfs)}] for artifact tuple {art_tuple}"
-                )
+            # If parent process has valid input-output tuples, use for linkage
+            if pp_art_tuples != []:
+                for pp_tuple in pp_art_tuples:
+                    if pp_tuple[1]["uri"].id == current_art.id:
+                        current_art = pp_tuple[0]["uri"]
+                        break
+            # If not, TODO
             else:
-                if print_history is True:
-                    print(json.dumps(history, indent=2))
-                    return on_fail, json.dumps(history, indent=2)
-                else:
-                    return on_fail
+                raise NotImplementedError()
+
+            pp = current_art.parent_process
+            if pp is not None:
+                steps_visited.append(f"'{pp.type.name}' ({pp.id})")
+
+            traceback.append(
+                {
+                    "Artifact": {
+                        "Name": current_art.name,
+                        "ID": current_art.id,
+                        "UDFs": dict(current_art.udf.items()),
+                        "Parent Step": {
+                            "Name": pp.type.name if pp else None,
+                            "ID": pp.id if pp else None,
+                        },
+                    }
+                }
+            )
+
+            # Search for correct UDF
+            for target_udf in target_udfs:
+                if target_udf in list_udfs(current_art):
+                    if log_traceback is True:
+                        logging.info(f"Traceback:\n{json.dumps(traceback, indent=2)}")
+                    logging.info(
+                        f"Found target UDF '{target_udf}'"
+                        + f" with value '{current_art.udf[target_udf]}'"
+                        + f" in process {steps_visited[-1]}"
+                        + f" {'output' if pp else 'input'}"
+                        + f" artifact '{current_art.name}' ({current_art.id})"
+                    )
+
+                    if return_traceback:
+                        return current_art.udf[target_udf], traceback
+                    else:
+                        return current_art.udf[target_udf]
+
+            if pp is None:
+                raise AssertionError(
+                    f"Artifact '{current_art.name}' ({current_art.id}) has no parent process linked and can't be traced back further."
+                )
+
+    except AssertionError:
+        if on_fail is not None:
+            logging.warning(
+                f"Failed traceback for artifact '{target_art.name}' ({target_art.id}), falling back to on_fail value '{on_fail}'"
+            )
+            return on_fail
+        else:
+            raise AssertionError(
+                f"Could not find matching UDF(s) [{', '.join(target_udfs)}] for artifact {target_art}"
+            )
