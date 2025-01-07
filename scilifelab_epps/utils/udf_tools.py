@@ -124,7 +124,7 @@ def fetch_last(
     target_udfs: str | list,
     log_traceback=False,
     return_traceback=False,
-    on_fail=None,
+    on_fail=AssertionError,
 ) -> (str | int | float) | tuple[str | int | float, dict]:
     """Recursively look for target UDF.
 
@@ -227,12 +227,12 @@ def fetch_last(
                 )
 
     except AssertionError:
-        if on_fail is not None:
-            logging.warning(
-                f"Failed traceback for artifact '{target_art.name}' ({target_art.id}), falling back to on_fail value '{on_fail}'"
-            )
-            return on_fail
-        else:
-            raise AssertionError(
+        if isinstance(on_fail, type) and issubclass(on_fail, Exception):
+            raise on_fail(
                 f"Could not find matching UDF(s) [{', '.join(target_udfs)}] for artifact {target_art}"
             )
+        else:
+            logging.warning(
+                f"Failed traceback for artifact '{target_art.name}' ({target_art.id}), falling back to value '{on_fail}'"
+            )
+            return on_fail
