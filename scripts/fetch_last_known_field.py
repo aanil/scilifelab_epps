@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import logging
+import sys
 from argparse import ArgumentParser
 from datetime import datetime as dt
 
@@ -55,6 +56,7 @@ def main(args):
             if i["uri"].type == "Analyte" and o["uri"].type == "Analyte"
         }
 
+    steps_used = []
     for art_in in arts_in:
         if no_outputs:
             target_artifact = art_in
@@ -70,8 +72,10 @@ def main(args):
             return_traceback=True,
             on_fail=None,
         )
-        # TODO collect history for overview of which steps have been pulled from
-        if udf_value:
+
+        steps_used.append(udf_history[-1]["Artifact"]["Parent Step"]["Name"])
+
+        if udf_value is not None:
             target_artifact.udf[target_udf] = udf_value
             target_artifact.put()
             logging.info(
@@ -82,6 +86,10 @@ def main(args):
                 f"Could not traceback UDF '{target_udf}' for {'input' if no_outputs else 'output'} artifact '{target_artifact.name}'"
             )
             logging.info(f"Traceback:\n{udf_history}")
+
+        sys.stdout(
+            f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
+        )
 
 
 if __name__ == "__main__":
