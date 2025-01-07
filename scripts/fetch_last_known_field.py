@@ -87,7 +87,7 @@ def main(args):
             )
             logging.info(f"Traceback:\n{udf_history}")
 
-        sys.stdout(
+        sys.stderr(
             f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
         )
 
