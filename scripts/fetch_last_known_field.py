@@ -38,7 +38,7 @@ def main(args):
     ), f"No target UDF supplied from step field '{args.step_udf}'"
 
     # Check whether process has output artifacts, not the case for e.g. QC steps
-    no_outputs: bool = udf_tools.no_outputs(process)
+    no_outputs: bool = True if udf_tools.get_art_tuples(process) == [] else False
 
     # Load input artifacts
     arts_in: list[Artifact] = [
