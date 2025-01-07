@@ -87,9 +87,8 @@ def main(args):
             )
             logging.info(f"Traceback:\n{udf_history}")
 
-        sys.stderr(
-            f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
-        )
+        # TODO use variable
+        msg = f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
 
 
 if __name__ == "__main__":
