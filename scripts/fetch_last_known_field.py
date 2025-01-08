@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import logging
-import sys
 from argparse import ArgumentParser
 from datetime import datetime as dt
 

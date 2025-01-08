@@ -1,7 +1,8 @@
 import json
 import logging
-from typing import Union
 import xml.etree.ElementTree as ET
+from typing import Union
+
 from genologics.entities import Artifact, Process
 from requests.exceptions import HTTPError
 
@@ -260,7 +261,7 @@ def fetch_last(
                     f"Parent process '{pp.type.name}' ({pp.id})"
                     + f" has target UDF(s) {target_udfs_in_parent_process},"
                     + f" but it's not filled in for artifact '{current_art.name}' ({current_art.id})."
-                    + f" Please double check that you haven't missed filling it in."
+                    + " Please double check that you haven't missed filling it in."
                 )
 
             # Stop traceback if no parent process is found
