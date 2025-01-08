@@ -273,7 +273,7 @@ def fetch_last(
     except AssertionError:
         if isinstance(on_fail, type) and issubclass(on_fail, Exception):
             raise on_fail(
-                f"Could not find matching UDF(s) [{', '.join(target_udfs)}] for artifact {target_art}"
+                f"Could not find matching UDF(s) [{', '.join(target_udfs)}] for artifact '{target_art.name}' ({target_art.id})"
             )
         else:
             logging.warning(
