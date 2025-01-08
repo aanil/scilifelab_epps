@@ -115,7 +115,9 @@ def fetch_sample_data(currentStep: Process, to_fetch: dict) -> pd.DataFrame:
                     row[col_name] = None
             else:
                 row[col_name] = fetch_last(
-                    target_art=art_tuple[1]["uri"], target_udfs=udf_query
+                    target_art=art_tuple[0]["uri"],
+                    target_udfs=udf_query,
+                    include_current=True,
                 )
         rows.append(row)
 
