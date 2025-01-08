@@ -94,6 +94,7 @@ def main(args):
         # - print
         # - stderr
         # - sys.exit("blabla")
+        print("Test print within script scope")
 
 
 if __name__ == "__main__":
