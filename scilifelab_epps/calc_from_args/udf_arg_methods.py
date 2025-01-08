@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-import logging
 from typing import Any
 
-import yaml
 from genologics.entities import Artifact, Process
 
 from scilifelab_epps.utils import udf_tools
