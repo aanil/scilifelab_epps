@@ -164,10 +164,10 @@ def fetch_last(
 
         log_traceback       If True, will log the full traceback.
 
-        return_traceback    If False, will return only UDF value.
-                            If True, will also return the traceback as a dict.
+        return_traceback    If True, will additionally return the traceback as a dict.
 
-        on_fail             If not None, will return this value on failure.
+        on_fail             If this is a subclass of Exception, will raise this exception on failure.
+                            If not, will return this value on failure instead of the UDF value.
     """
 
     # Convert to list, to enable iteration
