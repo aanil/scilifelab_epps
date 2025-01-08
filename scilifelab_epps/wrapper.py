@@ -97,6 +97,7 @@ def epp_decorator(script_path: str, timestamp: str):
                     )
                     sys.exit(2)
                 else:
+                    print("Test print")
                     sys.exit(0)
 
         return epp_wrapper

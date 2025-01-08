@@ -90,9 +90,10 @@ def main(args):
             )
             logging.info(f"Traceback:\n{traceback}")
 
-        logging.warning(
-            f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
-        )
+        # Look into exit 0 with message
+        # - print
+        # - stderr
+        # - sys.exit("blabla")
 
 
 if __name__ == "__main__":
