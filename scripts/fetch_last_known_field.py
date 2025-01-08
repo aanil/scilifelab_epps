@@ -90,11 +90,10 @@ def main(args):
             )
             logging.info(f"Traceback:\n{traceback}")
 
-        # Look into exit 0 with message
-        # - print
-        # - stderr
-        # - sys.exit("blabla")
-        print("Test print within script scope")
+        # Write to stdout for the green banner
+        print(
+            f"UDF '{target_udf}' pulled from steps: {' ,'.join(set(steps_used))}. Please double check the values."
+        )
 
 
 if __name__ == "__main__":
