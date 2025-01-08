@@ -47,7 +47,7 @@ def main(args):
 
     # Find target output artifacts, if any
     if no_outputs:
-        logging.info("Step has no output artifacts. Assigning to input artifact.")
+        logging.info("Step has no output artifacts. Assigning to input artifacts.")
     else:
         art_tuples: list[tuple[dict]] = process.input_output_maps
         art_in2out: dict[str:Artifact] = {
