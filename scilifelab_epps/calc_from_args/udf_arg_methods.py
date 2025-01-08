@@ -23,7 +23,6 @@ def fetch_from_arg(
 
     """
 
-    history: str | None = None
     source: Artifact | Process
     source_name: str
 
@@ -49,11 +48,9 @@ def fetch_from_arg(
             if arg_dict["recursive"]:
                 # Fetch UDF recursively
 
-                value, history = udf_tools.fetch_last(
+                value = udf_tools.fetch_last(
                     target_art=source,
                     target_udfs=arg_dict["udf"],
-                    log_traceback=True,
-                    return_traceback=True,
                 )
             else:
                 # Fetch UDF from input or output artifact
@@ -71,17 +68,6 @@ def fetch_from_arg(
             raise on_fail(msg)
         else:
             return on_fail
-
-    # Log what has been done
-    log_str = f"Fetched UDF '{arg_dict['udf']}': {value} from {arg_dict['source']} '{source_name}'."
-
-    if history:
-        history_yaml = yaml.load(history, Loader=yaml.FullLoader)
-        last_step_name = history_yaml[-1]["Step name"]
-        last_step_id = history_yaml[-1]["Step ID"]
-        log_str += f"\n\tUDF recusively fetched from step: '{last_step_name}' (ID: '{last_step_id}')"
-
-    logging.info(log_str)
 
     return value
 
