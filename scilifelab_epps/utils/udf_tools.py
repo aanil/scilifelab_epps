@@ -210,7 +210,9 @@ def fetch_last(
                         current_art = pp_tuple[0]["uri"]
                         break
             else:
-                raise NotImplementedError("Parent process has no valid input-output links, traceback can't continue.")
+                raise NotImplementedError(
+                    "Parent process has no valid input-output links, traceback can't continue."
+                )
 
             # Dynamically reassign parent process
             pp = current_art.parent_process
@@ -258,7 +260,8 @@ def fetch_last(
                     f"Parent process '{pp.type.name}' ({pp.id})"
                     + f" has target UDF(s) {target_udfs_in_parent_process},"
                     + f" but it's not filled in for artifact '{current_art.name}' ({current_art.id})."
-                    + f" Please double check that you haven't missed filling it in.")
+                    + f" Please double check that you haven't missed filling it in."
+                )
 
             # Stop traceback if no parent process is found
             if pp is None:
