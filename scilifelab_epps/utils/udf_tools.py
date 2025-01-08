@@ -1,7 +1,7 @@
 import json
 import logging
 import xml.etree.ElementTree as ET
-from typing import Union
+from typing import Any, Union
 
 from genologics.entities import Artifact, Process
 from requests.exceptions import HTTPError
@@ -153,7 +153,7 @@ def fetch_last(
     log_traceback=False,
     return_traceback=False,
     on_fail=AssertionError,
-) -> (str | int | float) | tuple[str | int | float, dict]:
+) -> Any | tuple[Any, dict]:
     """Recursively look for target UDF.
 
     Arguments:
