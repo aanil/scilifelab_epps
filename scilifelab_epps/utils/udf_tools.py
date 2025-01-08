@@ -1,13 +1,39 @@
 import json
 import logging
 from typing import Union
-
+import xml.etree.ElementTree as ET
 from genologics.entities import Artifact, Process
 from requests.exceptions import HTTPError
 
 DESC = """This is a submodule for defining reusable functions to handle artifact
 UDFs in in the Genologics Clarity LIMS API.
 """
+
+
+def process_has_udfs(process: Process, target_udfs: list[str]) -> list[str]:
+    """Check whether any target UDFs are present in the sample fields of the process associated type.
+
+    This function is necessary because a non-required sample UDF left blank will not be detected in the artifact object.
+
+    Returns a list of found UDFs, or an empty list if none were found.
+    """
+
+    # Get the raw xml of the process associated type
+    raw_xml = process.type.xml()
+
+    # Parse as tree object
+    root = ET.fromstring(raw_xml)
+
+    # Instantiate return object
+    target_udfs_found = []
+
+    # Check whether the target UDF is present in the sample fields
+    for sample_field in root.iter("sample-field"):
+        for target_udf in target_udfs:
+            if sample_field.attrib["name"] == target_udf:
+                target_udfs_found.append(target_udf)
+
+    return target_udfs_found
 
 
 def put(target: Artifact | Process, target_udf: str, val, on_fail=AssertionError):
@@ -130,14 +156,15 @@ def fetch_last(
 
     Arguments:
 
-        target_art          Artifact to traceback and assign UDF value to.
+        target_art          Artifact to traceback. Any target UDFs already present in this artifact will be ignored.
 
-        target_udfs         Can be supplied as a string, or as a prioritized
+        target_udfs         The UDF(s) to look for. Can be supplied as a string, or as a prioritized
                             list of strings.
 
         log_traceback       If True, will log the full traceback.
 
-        return_traceback    If True, will return the traceback too.
+        return_traceback    If False, will return only UDF value.
+                            If True, will also return the traceback as a dict.
 
         on_fail             If not None, will return this value on failure.
     """
@@ -179,15 +206,19 @@ def fetch_last(
             if pp_art_tuples != []:
                 for pp_tuple in pp_art_tuples:
                     if pp_tuple[1]["uri"].id == current_art.id:
+                        # Dynamically reassign current artifact
                         current_art = pp_tuple[0]["uri"]
                         break
-            # If not, TODO
             else:
-                raise NotImplementedError()
+                raise NotImplementedError("Parent process has no valid input-output links, traceback can't continue.")
 
+            # Dynamically reassign parent process
             pp = current_art.parent_process
+
+            # Keep track of visited parent processes
             if pp is not None:
                 steps_visited.append(f"'{pp.type.name}' ({pp.id})")
+                target_udfs_in_parent_process = process_has_udfs(pp, target_udfs)
 
             traceback.append(
                 {
@@ -221,6 +252,15 @@ def fetch_last(
                     else:
                         return current_art.udf[target_udf]
 
+            # Address the case that no target UDFs were found on the artifact, even though they were present in the parent process
+            if target_udfs_in_parent_process != []:
+                logging.warning(
+                    f"Parent process '{pp.type.name}' ({pp.id})"
+                    + f" has target UDF(s) {target_udfs_in_parent_process},"
+                    + f" but it's not filled in for artifact '{current_art}' ({current_art.id})."
+                    + f" Please double check that you haven't missed filling it in.")
+
+            # Stop traceback if no parent process is found
             if pp is None:
                 raise AssertionError(
                     f"Artifact '{current_art.name}' ({current_art.id}) has no parent process linked and can't be traced back further."
@@ -235,4 +275,7 @@ def fetch_last(
             logging.warning(
                 f"Failed traceback for artifact '{target_art.name}' ({target_art.id}), falling back to value '{on_fail}'"
             )
-            return on_fail
+            if return_traceback:
+                return on_fail, traceback
+            else:
+                return on_fail
