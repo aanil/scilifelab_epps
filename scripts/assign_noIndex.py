@@ -12,6 +12,9 @@ from scilifelab_epps.wrapper import epp_decorator
 
 DESC = """Script to automatically assign the 'noIndex' reagent label
 to all unlabeled input or output samples of a step.
+
+This is necessary in order for unlabeled samples to pass through a
+LIMS demultiplexing step.
 """
 
 TIMESTAMP: str = dt.now().strftime("%y%m%d_%H%M%S")
