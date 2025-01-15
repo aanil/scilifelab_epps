@@ -13,8 +13,8 @@ from scilifelab_epps.wrapper import epp_decorator
 DESC = """Script to automatically assign the 'noIndex' reagent label
 to all unlabeled input or output samples of a step.
 
-This is necessary in order for unlabeled samples to pass through a
-LIMS demultiplexing step.
+The development of this script was made necessary by the need to pass
+unlabeled ONT samples through a LIMS demultiplexing step.
 
 Running the script at the start of a demultiplexing step will unfortunately
 not work as intended, since LIMS performs the demultiplexing magic
