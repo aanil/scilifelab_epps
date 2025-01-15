@@ -11,7 +11,7 @@ from genologics.lims import Lims
 from scilifelab_epps.wrapper import epp_decorator
 
 DESC = """Script to automatically assign the 'noIndex' reagent label
-to all unlabeled input samples of a step.
+to all unlabeled input or output samples of a step.
 """
 
 TIMESTAMP: str = dt.now().strftime("%y%m%d_%H%M%S")
@@ -23,10 +23,15 @@ def main(args):
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
 
+    if args.label == "inputs":
+        arts_list = process.all_inputs()
+    elif args.label == "outputs":
+        arts_list = process.all_outputs()
+    else:
+        raise ValueError(f"Invalid value '{args.label}' for argument 'label'")
+
     unlabeled_input_arts = [
-        art
-        for art in process.all_inputs()
-        if not art.reagent_labels and art.type == "Analyte"
+        art for art in arts_list if not art.reagent_labels and art.type == "Analyte"
     ]
 
     xml_element_noIndex = ET.Element("reagent-label", name="NoIndex")
@@ -50,6 +55,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description=DESC)
     parser.add_argument("--pid", type=str, help="Lims ID for current Process")
     parser.add_argument("--log", type=str, help="Which log file slot to use")
+    parser.add_argument("--label", type=str, help="Either 'inputs' or 'outputs'")
 
     args = parser.parse_args()
 
