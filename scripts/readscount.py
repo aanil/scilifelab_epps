@@ -54,29 +54,20 @@ def main(lims, args, logger):
                     sample.udf["Total Reads (M)"], sample.name
                 )
             )
-            try:
-                logging.info(
-                    " ###### updating {} with {}".format(
-                        sample.name, sample.project.udf.get("Reads Min", 0)
-                    )
+            logging.info(
+                " ###### updating {} with {}".format(
+                    sample.name, sample.project.udf.get("Reads Min", 0)
                 )
-                sample.udf["Reads Min"] = (
-                    sample.project.udf.get("Reads Min", 0) / 1000000
-                )
-                # Commit changes
-                sample.put()
-                if sample.udf["Reads Min"] >= sample.udf["Total Reads (M)"]:
-                    sample.udf["Status (auto)"] = "In Progress"
-                    sample.udf["Passed Sequencing QC"] = "False"
-                elif sample.udf["Reads Min"] < sample.udf["Total Reads (M)"]:
-                    sample.udf["Passed Sequencing QC"] = "True"
-                    sample.udf["Status (auto)"] = "Finished"
-            except KeyError as e:
-                print(e)
-                logging.warning(
-                    f"No reads minimum found, cannot set the status auto flag for sample {sample.name}"
-                )
-                error_counter += 1
+            )
+            sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 1000000
+            # Commit changes
+            sample.put()
+            if sample.udf["Reads Min"] >= sample.udf["Total Reads (M)"]:
+                sample.udf["Status (auto)"] = "In Progress"
+                sample.udf["Passed Sequencing QC"] = "False"
+            elif sample.udf["Reads Min"] < sample.udf["Total Reads (M)"]:
+                sample.udf["Passed Sequencing QC"] = "True"
+                sample.udf["Status (auto)"] = "Finished"
 
             # Commit the changes
             sample.put()
