@@ -54,23 +54,24 @@ def main(lims, args, logger):
         sample = art_out.samples[0]
         sample_counter += 1
 
-        # Update the total number of reads
+        # Traceback and calculate the total number of reads
         total_reads = sum_reads(sample, summary)
+
+        # Set total reads for sample and artifact UDFs
         sample.udf["Total Reads (M)"] = total_reads
         art_out.udf["Set Total Reads"] = total_reads
         logging.info(f"Total reads is {total_reads} for sample {sample.name}")
 
-        # Set sample min reads UDF from project min reads UDF
-        logging.info(
-            f"Updating {sample.name} UDF 'Reads Min' to {sample.project.udf.get("Reads Min", 0)}"
-        )
-        sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 10e6
+        # Set min reads sample UDF from project UDF
+        min_reads = sample.project.udf.get("Reads Min", 0) / 10e6
+        logging.info(f"Updating {sample.name} UDF 'Reads Min' to {min_reads}")
+        sample.udf["Reads Min"] = min_reads
 
         # Set sample UDFs for status and sequencing QC based on min reads and total reads
-        if sample.udf["Reads Min"] >= total_reads:
+        if total_reads <= min_reads:
             sample.udf["Status (auto)"] = "In Progress"
             sample.udf["Passed Sequencing QC"] = "False"
-        elif sample.udf["Reads Min"] < total_reads:
+        elif total_reads > min_reads:
             sample.udf["Passed Sequencing QC"] = "True"
             sample.udf["Status (auto)"] = "Finished"
 
