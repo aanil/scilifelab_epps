@@ -50,7 +50,7 @@ def main(lims, args):
     log_artifact = [
         art
         for art in process.all_outputs()
-        if art.type == "ResultFile" and art.name == "AggregationLog"
+        if art.type == "ResultFile" and art.name == "AggregationSummary"
     ][0]
 
     # Iterate across output analytes
@@ -89,7 +89,7 @@ def main(lims, args):
         art_out.put()
 
     # Write the csv file, separated by pipes, no cell delimiter
-    with open("AggregationLog.csv", "w") as f:
+    with open("AggregationSummary.csv", "w") as f:
         f.write("sep=,\n")
         f.write(
             "sample name,number of flowcells,number of lanes,flowcell1:lane1|lane2;flowcell2:lane1|lane2|lane3 ...\n"
@@ -107,7 +107,7 @@ def main(lims, args):
 
     # Upload the log file
     try:
-        attach_file(os.path.join(os.getcwd(), "AggregationLog.csv"), log_artifact)
+        attach_file(os.path.join(os.getcwd(), "AggregationSummary.csv"), log_artifact)
         logging.info(f"Updated {sample_counter} samples with {error_counter} errors")
     except AttributeError:
         # Happens if the log artifact does not exist, if the step has been started before the configuration changes
