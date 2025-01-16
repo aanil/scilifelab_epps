@@ -178,12 +178,12 @@ def sum_reads(sample, summary):
         assert len(demux_art_parents) == 1
         demux_art_parent = demux_art_parents[0]
 
+        # Two cases to consider:
         if demux_art_parent.parent_process.type.name in SEQUENCING.values():
+            # Parent of demux artifact is a sequencing process output (ONT)
             seq_process = demux_art_parent.parent_process
         else:
-            raise NotImplementedError(
-                f"Parent process of demux artifact {demux_art.id} is not a sequencing process"
-            )  # TODO check whether this ever happens
+            # Parent of demux artifact is a sequencing process input (Illumina)
             seq_process = lims.get_processes(
                 type=list(SEQUENCING.values()),
                 inputartifactlimsid=demux_art_parent.id,
