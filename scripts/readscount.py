@@ -19,7 +19,9 @@ DEMULTIPLEX = {
     "3205": "ONT Finish Sequencing v3",  # TODO Update this to reflect prod
     # TODO Add AVITI
 }
-SUMMARY = {"356": "Project Summary 1.3"}
+SUMMARY = {
+    "356": "Project Summary 1.3",
+}
 SEQUENCING = {
     "38": "Illumina Sequencing (Illumina SBS) 4.0",
     "46": "MiSeq Run (MiSeq) 4.0",
@@ -38,42 +40,43 @@ def main(lims, args, logger):
     error_counter = 0
 
     summary = {}  # { sample_name : { flowcell : { lane1, lane2, ... } } }  # dict -> dict -> set
-    log_artifact = None  # Dynamically set to the log artifact
+    log_artifact = [
+        art
+        for art in process.all_outputs()
+        if art.type == "ResultFile" and art.name == "AggregationLog"
+    ][0]
 
-    for art_out in process.all_outputs():
-        # Filter to only keep solo sample demultiplexing output artifacts
-        if art_out.type == "Analyte" and len(art_out.samples) == 1:
-            sample = art_out.samples[0]
-            sample_counter += 1
+    for art_out in [art for art in process.all_outputs() if art.type == "Analyte"]:
+        assert (
+            len(art_out.samples) == 1
+        ), f"Found {len(art_out.samples)} samples for the output analyte {art_out.id}, that should not happen"
 
-            # Update the total number of reads
-            total_reads = sum_reads(sample, summary)
-            sample.udf["Total Reads (M)"] = total_reads
-            art_out.udf["Set Total Reads"] = total_reads
-            logging.info(f"Total reads is {total_reads} for sample {sample.name}")
-            logging.info(
-                f"Updating {sample.name} UDF 'Reads Min' to {sample.project.udf.get("Reads Min", 0)}"
-            )
-            sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 10e6
+        sample = art_out.samples[0]
+        sample_counter += 1
 
-            # Set sample UDFs for status and sequencing QC
-            if sample.udf["Reads Min"] >= total_reads:
-                sample.udf["Status (auto)"] = "In Progress"
-                sample.udf["Passed Sequencing QC"] = "False"
-            elif sample.udf["Reads Min"] < total_reads:
-                sample.udf["Passed Sequencing QC"] = "True"
-                sample.udf["Status (auto)"] = "Finished"
+        # Update the total number of reads
+        total_reads = sum_reads(sample, summary)
+        sample.udf["Total Reads (M)"] = total_reads
+        art_out.udf["Set Total Reads"] = total_reads
+        logging.info(f"Total reads is {total_reads} for sample {sample.name}")
 
-            # Commit changes to sample and sample artifact
-            sample.put()
-            art_out.put()
+        # Set sample min reads UDF from project min reads UDF
+        logging.info(
+            f"Updating {sample.name} UDF 'Reads Min' to {sample.project.udf.get("Reads Min", 0)}"
+        )
+        sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 10e6
 
-        elif (art_out.type == "Analyte") and len(art_out.samples) != 1:
-            logging.error(
-                f"Found {len(art_out.samples())} samples for the output analyte {art_out.id}, that should not happen"
-            )
-        elif art_out.type == "ResultFile" and art_out.name == "AggregationLog":
-            log_artifact = art_out
+        # Set sample UDFs for status and sequencing QC based on min reads and total reads
+        if sample.udf["Reads Min"] >= total_reads:
+            sample.udf["Status (auto)"] = "In Progress"
+            sample.udf["Passed Sequencing QC"] = "False"
+        elif sample.udf["Reads Min"] < total_reads:
+            sample.udf["Passed Sequencing QC"] = "True"
+            sample.udf["Status (auto)"] = "Finished"
+
+        # Commit changes to sample and sample artifact
+        sample.put()
+        art_out.put()
 
     # Write the csv file, separated by pipes, no cell delimiter
     with open("AggregationLog.csv", "w") as f:
@@ -95,7 +98,7 @@ def main(lims, args, logger):
     # Upload the log file
     try:
         attach_file(os.path.join(os.getcwd(), "AggregationLog.csv"), log_artifact)
-        logging.info(f"updated {sample_counter} samples with {error_counter} errors")
+        logging.info(f"Updated {sample_counter} samples with {error_counter} errors")
     except AttributeError:
         # Happens if the log artifact does not exist, if the step has been started before the configuration changes
         logging.info("Could not upload the log file")
