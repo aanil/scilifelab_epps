@@ -54,8 +54,9 @@ def main(args):
     ][0]
 
     # Iterate across output analytes
-    arts_out = [art for art in process.all_outputs() if art.type == "Analyte"].sort(
-        key=lambda art: art.name
+    arts_out = sorted(
+        [art for art in process.all_outputs() if art.type == "Analyte"],
+        key=lambda art: art.name,
     )
     for art_out in arts_out:
         assert (
