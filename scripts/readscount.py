@@ -49,29 +49,26 @@ def main(lims, args, logger):
             total_reads = sum_reads(sample, summary)
             sample.udf["Total Reads (M)"] = total_reads
             art_out.udf["Set Total Reads"] = total_reads
+            logging.info(f"Total reads is {total_reads} for sample {sample.name}")
             logging.info(
-                "Total reads is {} for sample {}".format(
-                    sample.udf["Total Reads (M)"], sample.name
-                )
-            )
-            logging.info(
-                " ###### updating {} with {}".format(
+                " ###### Updating {} with {}".format(
                     sample.name, sample.project.udf.get("Reads Min", 0)
                 )
             )
             sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 1000000
-            # Commit changes
-            sample.put()
-            if sample.udf["Reads Min"] >= sample.udf["Total Reads (M)"]:
+
+            # Set sample UDFs for status and sequencing QC
+            if sample.udf["Reads Min"] >= total_reads:
                 sample.udf["Status (auto)"] = "In Progress"
                 sample.udf["Passed Sequencing QC"] = "False"
-            elif sample.udf["Reads Min"] < sample.udf["Total Reads (M)"]:
+            elif sample.udf["Reads Min"] < total_reads:
                 sample.udf["Passed Sequencing QC"] = "True"
                 sample.udf["Status (auto)"] = "Finished"
 
-            # Commit the changes
+            # Commit changes to sample and sample artifact
             sample.put()
             art_out.put()
+
         elif (art_out.type == "Analyte") and len(art_out.samples) != 1:
             logging.error(
                 f"Found {len(art_out.samples())} samples for the output analyte {art_out.id}, that should not happen"
@@ -95,6 +92,8 @@ def main(lims, args, logger):
             f.write(
                 "{},{},{},{}\n".format(sample, n_flowcells, n_lanes, ";".join(view))
             )
+
+    # Upload the log file
     try:
         attach_file(os.path.join(os.getcwd(), "AggregationLog.csv"), log_artifact)
         logging.info(f"updated {sample_counter} samples with {error_counter} errors")
