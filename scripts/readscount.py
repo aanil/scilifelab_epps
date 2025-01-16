@@ -169,7 +169,7 @@ def sum_reads(sample, summary):
 
         assert demux_art.udf["Include reads"] == "YES"
 
-        # From the demux artifact, find the parent analyte from the actual sequencing step
+        # Track down the sequencing process upstream of the demux artifact
         demux_art_parents = [
             parent
             for parent in get_parent_inputs(demux_art)
@@ -178,23 +178,25 @@ def sum_reads(sample, summary):
         assert len(demux_art_parents) == 1
         demux_art_parent = demux_art_parents[0]
 
-        # Check whether we are dealing with dual reads
-        dual_reads = False
-        try:
+        if demux_art_parent.parent_process.type.name in SEQUENCING.values():
+            seq_process = demux_art_parent.parent_process
+        else:
+            raise NotImplementedError(
+                f"Parent process of demux artifact {demux_art.id} is not a sequencing process"
+            )  # TODO check whether this ever happens
             seq_process = lims.get_processes(
                 type=list(SEQUENCING.values()),
                 inputartifactlimsid=demux_art_parent.id,
             )[0]
-        except TypeError:
-            logging.error(
-                f"Did not manage to get sequencing process for artifact '{demux_art_parent.name}' ({demux_art_parent.id})"
-            )
+
+        # Check whether we are dealing with dual reads
+        if (
+            "Read 2 Cycles" in seq_process.udf
+            and seq_process.udf["Read 2 Cycles"] is not None
+        ):
+            dual_reads = True
         else:
-            if (
-                "Read 2 Cycles" in seq_process.udf
-                and seq_process.udf["Read 2 Cycles"] is not None
-            ):
-                dual_reads = True
+            dual_reads = False
 
         # Gather flowcell information
         if "ONT flow cell ID" in demux_art_parent.udf:
