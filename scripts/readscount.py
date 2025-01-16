@@ -39,7 +39,7 @@ SEQUENCING = {
 
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
-def main(lims, args):
+def main(args):
     """This should be run at project summary level"""
     process = Process(lims, id=args.pid)
 
