@@ -105,21 +105,6 @@ def main(lims, args, logger):
         logging.info("Could not upload the log file")
 
 
-def dem_number(sample):
-    """Returns the number of distinct demultiplexing processes tagged with "Include reads" for a given sample"""
-    expected_name = f"{sample.name} (FASTQ reads)"
-    demux_steps = set()
-    arts = lims.get_artifacts(
-        sample_name=sample.name,
-        process_type=list(DEMULTIPLEX.values()),
-        name=expected_name,
-    )
-    for art in arts:
-        if art.udf["Include reads"] == "YES":
-            demux_steps.add(art.parent_process.id)
-    return len(demux_steps)
-
-
 def sum_reads(sample, summary):
     # Append to summary
     if sample.name not in summary:
