@@ -14,7 +14,11 @@ from genologics.lims import Lims
 
 from scilifelab_epps.epp import EppLogger, attach_file
 
-DEMULTIPLEX = {"13": "Bcl Conversion & Demultiplexing (Illumina SBS) 4.0"}
+DEMULTIPLEX = {
+    "13": "Bcl Conversion & Demultiplexing (Illumina SBS) 4.0",
+    "3205": "ONT Finish Sequencing v3",  # TODO Update this to reflect prod
+    # TODO Add AVITI
+}
 SUMMARY = {"356": "Project Summary 1.3"}
 SEQUENCING = {
     "38": "Illumina Sequencing (Illumina SBS) 4.0",
@@ -23,25 +27,28 @@ SEQUENCING = {
     "1454": "AUTOMATED - NovaSeq Run (NovaSeq 6000 v2.0)",
     "1908": "Illumina Sequencing (NextSeq) v1.0",
     "2612": "NovaSeqXPlus Run v1.0",
+    "2955": "ONT Start Sequencing v3.0",  # TODO Update this to reflect prod
 }
 
 
 def main(lims, args, logger):
     """This should be run at project summary level"""
-    p = Process(lims, id=args.pid)
-    samplenb = 0
-    errnb = 0
-    summary = {}
-    logart = None
-    for output_artifact in p.all_outputs():
-        # filter to only keep solo sample demultiplexing output artifacts
-        if output_artifact.type == "Analyte" and len(output_artifact.samples) == 1:
-            sample = output_artifact.samples[0]
-            samplenb += 1
-            # update the total number of reads
-            total_reads = sumreads(sample, summary)
+    process = Process(lims, id=args.pid)
+    sample_counter = 0
+    error_counter = 0
+
+    summary = {}  # { sample_name : { flowcell : { lane1, lane2, ... } } }  # dict -> dict -> set
+    log_artifact = None  # Dynamically set to the log artifact
+
+    for art_out in process.all_outputs():
+        # Filter to only keep solo sample demultiplexing output artifacts
+        if art_out.type == "Analyte" and len(art_out.samples) == 1:
+            sample = art_out.samples[0]
+            sample_counter += 1
+            # Update the total number of reads
+            total_reads = sum_reads(sample, summary)
             sample.udf["Total Reads (M)"] = total_reads
-            output_artifact.udf["Set Total Reads"] = total_reads
+            art_out.udf["Set Total Reads"] = total_reads
             logging.info(
                 "Total reads is {} for sample {}".format(
                     sample.udf["Total Reads (M)"], sample.name
@@ -56,6 +63,7 @@ def main(lims, args, logger):
                 sample.udf["Reads Min"] = (
                     sample.project.udf.get("Reads Min", 0) / 1000000
                 )
+                # Commit changes
                 sample.put()
                 if sample.udf["Reads Min"] >= sample.udf["Total Reads (M)"]:
                     sample.udf["Status (auto)"] = "In Progress"
@@ -68,22 +76,19 @@ def main(lims, args, logger):
                 logging.warning(
                     f"No reads minimum found, cannot set the status auto flag for sample {sample.name}"
                 )
-                errnb += 1
+                error_counter += 1
 
-            # commit the changes
+            # Commit the changes
             sample.put()
-            output_artifact.put()
-        elif (output_artifact.type == "Analyte") and len(output_artifact.samples) != 1:
+            art_out.put()
+        elif (art_out.type == "Analyte") and len(art_out.samples) != 1:
             logging.error(
-                f"Found {len(output_artifact.samples())} samples for the ouput analyte {output_artifact.id}, that should not happen"
+                f"Found {len(art_out.samples())} samples for the output analyte {art_out.id}, that should not happen"
             )
-        elif (
-            output_artifact.type == "ResultFile"
-            and output_artifact.name == "AggregationLog"
-        ):
-            logart = output_artifact
+        elif art_out.type == "ResultFile" and art_out.name == "AggregationLog":
+            log_artifact = art_out
 
-    # write the csv file, separated by pipes, no cell delimiter
+    # Write the csv file, separated by pipes, no cell delimiter
     with open("AggregationLog.csv", "w") as f:
         f.write("sep=,\n")
         f.write(
@@ -91,118 +96,132 @@ def main(lims, args, logger):
         )
         for sample in summary:
             view = []
-            totfc = len(summary[sample])
-            totlanes = 0
+            n_flowcells = len(summary[sample])
+            n_lanes = 0
             for fc in summary[sample]:
                 view.append("{}:{}".format(fc, "|".join(summary[sample][fc])))
-                totlanes += len(summary[sample][fc])
-            f.write("{},{},{},{}\n".format(sample, totfc, totlanes, ";".join(view)))
+                n_lanes += len(summary[sample][fc])
+            f.write(
+                "{},{},{},{}\n".format(sample, n_flowcells, n_lanes, ";".join(view))
+            )
     try:
-        attach_file(os.path.join(os.getcwd(), "AggregationLog.csv"), logart)
-        logging.info(f"updated {samplenb} samples with {errnb} errors")
+        attach_file(os.path.join(os.getcwd(), "AggregationLog.csv"), log_artifact)
+        logging.info(f"updated {sample_counter} samples with {error_counter} errors")
     except AttributeError:
-        # happens if the log artifact does not exist, if the step has been started before the configuration changes
+        # Happens if the log artifact does not exist, if the step has been started before the configuration changes
         logging.info("Could not upload the log file")
 
 
-def demnumber(sample):
+def dem_number(sample):
     """Returns the number of distinct demultiplexing processes tagged with "Include reads" for a given sample"""
-    expectedName = f"{sample.name} (FASTQ reads)"
-    dem = set()
+    expected_name = f"{sample.name} (FASTQ reads)"
+    demux_steps = set()
     arts = lims.get_artifacts(
         sample_name=sample.name,
         process_type=list(DEMULTIPLEX.values()),
-        name=expectedName,
+        name=expected_name,
     )
-    for a in arts:
-        if a.udf["Include reads"] == "YES":
-            dem.add(a.parent_process.id)
-    return len(dem)
+    for art in arts:
+        if art.udf["Include reads"] == "YES":
+            demux_steps.add(art.parent_process.id)
+    return len(demux_steps)
 
 
-def sumreads(sample, summary):
+def sum_reads(sample, summary):
     if sample.name not in summary:
         summary[sample.name] = {}
-    expectedName = f"{sample.name} (FASTQ reads)"
+    expected_name = f"{sample.name} (FASTQ reads)"
     arts = lims.get_artifacts(
         sample_name=sample.name,
         process_type=list(DEMULTIPLEX.values()),
-        name=expectedName,
+        name=expected_name,
     )
-    tot = 0
-    fclanel = []
-    filteredarts = []
+    tot_reads = 0
+    flowcell_lane_list = []
+    filtered_arts = []
     base_art = None
-    for a in sorted(arts, key=lambda art: art.parent_process.date_run, reverse=True):
-        if "# Reads" not in a.udf:
+    for art in sorted(arts, key=lambda art: art.parent_process.date_run, reverse=True):
+        if "# Reads" not in art.udf:
             continue
         try:
-            if "Include reads" in a.udf:
-                orig = getParentInputs(a)
-                for o in orig:
-                    if sample in o.samples:
-                        fc = "{}:{}".format(
-                            o.location[0].name, o.location[1].split(":")[0]
-                        )
-                        if fc not in fclanel:
-                            filteredarts.append(a)
-                            fclanel.append(fc)
-                        if o.location[0].name in summary[sample.name]:
-                            summary[sample.name][o.location[0].name].add(
-                                o.location[1].split(":")[0]
-                            )
+            if "Include reads" in art.udf:
+                parent_arts = getParentInputs(art)
+                for parent_art in parent_arts:
+                    if sample in parent_art.samples:
+                        # ONT
+                        if "ONT flow cell ID" in parent_art.udf:
+                            flowcell_lane = parent_art.udf["ONT flow cell ID"]
+                            if flowcell_lane not in flowcell_lane_list:
+                                filtered_arts.append(art)
+                                flowcell_lane_list.append(flowcell_lane)
+                            if flowcell_lane not in summary[sample.name]:
+                                summary[sample.name][flowcell_lane] = set()
+
+                        # Illumina
                         else:
-                            summary[sample.name][o.location[0].name] = set(
-                                o.location[1].split(":")[0]
+                            flowcell_lane = "{}:{}".format(
+                                parent_art.location[0].name,
+                                parent_art.location[1].split(":")[0],
                             )
+                            if flowcell_lane not in flowcell_lane_list:
+                                filtered_arts.append(art)
+                                flowcell_lane_list.append(flowcell_lane)
+                            if parent_art.location[0].name in summary[sample.name]:
+                                summary[sample.name][parent_art.location[0].name].add(
+                                    parent_art.location[1].split(":")[0]
+                                )
+                            else:
+                                summary[sample.name][parent_art.location[0].name] = set(
+                                    parent_art.location[1].split(":")[0]
+                                )
 
         except KeyError:
             # Happens if the "Include reads" does not exist
             pass
 
-    for i in range(0, len(filteredarts)):
-        a = filteredarts[i]
-        if a.udf["Include reads"] == "YES":
-            base_art = a
-            tot += float(a.udf["# Reads"])
+    for i in range(0, len(filtered_arts)):
+        art = filtered_arts[i]
+        if art.udf["Include reads"] == "YES":
+            base_art = art
+            tot_reads += float(art.udf["# Reads"])
 
-    # grab the sequencing process associated
-    # find the correct input
+    # Grab the sequencing process associated
+    # Find the correct input
     try:
-        for inart in base_art.parent_process.all_inputs():
-            if sample.name in [s.name for s in inart.samples]:
+        for art_in in base_art.parent_process.all_inputs():
+            if sample.name in [s.name for s in art_in.samples]:
                 try:
                     sq = lims.get_processes(
-                        type=list(SEQUENCING.values()), inputartifactlimsid=inart.id
+                        type=list(SEQUENCING.values()), inputartifactlimsid=art_in.id
                     )[0]
                 except TypeError:
                     logging.error(
-                        f"Did not manage to get sequencing process for artifact {inart.id}"
+                        f"Did not manage to get sequencing process for artifact {art_in.id}"
                     )
                 else:
                     if (
                         "Read 2 Cycles" in sq.udf
                         and sq.udf["Read 2 Cycles"] is not None
                     ):
-                        tot /= 2
+                        tot_reads /= 2
                 break
     except AttributeError as e:
         print(e)
-        # base_art is still None because no arts were found
+        # Base_art is still None because no arts were found
         logging.info(f"No demultiplexing processes found for sample {sample.name}")
 
-    # total is displayed as millions
-    tot /= 1000000
-    return tot
+    # Total is displayed as millions
+    tot_reads /= 1000000
+    return tot_reads
 
 
 def getParentInputs(art):
-    inp = set()
-    for i in art.parent_process.input_output_maps:
-        if i[1]["uri"].id == art.id:
-            inp.add(i[0]["uri"])
+    input_arts = set()
+    for input_output_tuple in art.parent_process.input_output_maps:
+        if input_output_tuple[1]["uri"].id == art.id:
+            input_arts.add(input_output_tuple[0]["uri"])
 
-    return inp
+    return input_arts
 
 
 if __name__ == "__main__":
