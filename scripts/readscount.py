@@ -7,13 +7,18 @@ Denis Moreno, Science for Life Laboratory, Stockholm, Sweden
 import logging
 import os
 from argparse import ArgumentParser
+from datetime import datetime as dt
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
 from genologics.lims import Lims
 
-from scilifelab_epps.epp import EppLogger, attach_file
+from scilifelab_epps.epp import attach_file
+from scilifelab_epps.wrapper import epp_decorator
 
+TIMESTAMP: str = dt.now().strftime("%y%m%d_%H%M%S")
+
+# Master step IDs and names
 DEMULTIPLEX = {
     "13": "Bcl Conversion & Demultiplexing (Illumina SBS) 4.0",
     "3205": "ONT Finish Sequencing v3",  # TODO Update this to reflect prod
@@ -33,9 +38,11 @@ SEQUENCING = {
 }
 
 
-def main(lims, args, logger):
+@epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
+def main(lims, args):
     """This should be run at project summary level"""
     process = Process(lims, id=args.pid)
+
     sample_counter = 0
     error_counter = 0
 
@@ -226,13 +233,13 @@ def get_parent_inputs(art):
 
 
 if __name__ == "__main__":
+    # Parse args
     parser = ArgumentParser(description=DESC)
-    parser.add_argument("--pid", help="Lims id for current Process")
-    parser.add_argument("--log", help="Log file for runtime info and errors.")
+    parser.add_argument("--pid", type=str, help="Lims ID for current Process")
+    parser.add_argument("--log", type=str, help="Which log file slot to use")
+
     args = parser.parse_args()
 
     lims = Lims(BASEURI, USERNAME, PASSWORD)
-    lims.check_version()
 
-    with EppLogger(args.log, lims=lims, prepend=True) as epp_logger:
-        main(lims, args, epp_logger)
+    main(args)
