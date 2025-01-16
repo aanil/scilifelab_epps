@@ -132,41 +132,37 @@ def sum_reads(sample, summary):
     for art in sorted(arts, key=lambda art: art.parent_process.date_run, reverse=True):
         if "# Reads" not in art.udf:
             continue
-        try:
-            if "Include reads" in art.udf:
-                parent_arts = getParentInputs(art)
-                for parent_art in parent_arts:
-                    if sample in parent_art.samples:
-                        # ONT
-                        if "ONT flow cell ID" in parent_art.udf:
-                            flowcell_lane = parent_art.udf["ONT flow cell ID"]
-                            if flowcell_lane not in flowcell_lane_list:
-                                filtered_arts.append(art)
-                                flowcell_lane_list.append(flowcell_lane)
-                            if flowcell_lane not in summary[sample.name]:
-                                summary[sample.name][flowcell_lane] = set()
 
-                        # Illumina
-                        else:
-                            flowcell_lane = "{}:{}".format(
-                                parent_art.location[0].name,
-                                parent_art.location[1].split(":")[0],
+        if "Include reads" in art.udf:
+            parent_arts = getParentInputs(art)
+            for parent_art in parent_arts:
+                if sample in parent_art.samples:
+                    # ONT
+                    if "ONT flow cell ID" in parent_art.udf:
+                        flowcell_lane = parent_art.udf["ONT flow cell ID"]
+                        if flowcell_lane not in flowcell_lane_list:
+                            filtered_arts.append(art)
+                            flowcell_lane_list.append(flowcell_lane)
+                        if flowcell_lane not in summary[sample.name]:
+                            summary[sample.name][flowcell_lane] = set()
+
+                    # Illumina
+                    else:
+                        flowcell_lane = "{}:{}".format(
+                            parent_art.location[0].name,
+                            parent_art.location[1].split(":")[0],
+                        )
+                        if flowcell_lane not in flowcell_lane_list:
+                            filtered_arts.append(art)
+                            flowcell_lane_list.append(flowcell_lane)
+                        if parent_art.location[0].name in summary[sample.name]:
+                            summary[sample.name][parent_art.location[0].name].add(
+                                parent_art.location[1].split(":")[0]
                             )
-                            if flowcell_lane not in flowcell_lane_list:
-                                filtered_arts.append(art)
-                                flowcell_lane_list.append(flowcell_lane)
-                            if parent_art.location[0].name in summary[sample.name]:
-                                summary[sample.name][parent_art.location[0].name].add(
-                                    parent_art.location[1].split(":")[0]
-                                )
-                            else:
-                                summary[sample.name][parent_art.location[0].name] = set(
-                                    parent_art.location[1].split(":")[0]
-                                )
-
-        except KeyError:
-            # Happens if the "Include reads" does not exist
-            pass
+                        else:
+                            summary[sample.name][parent_art.location[0].name] = set(
+                                parent_art.location[1].split(":")[0]
+                            )
 
     for i in range(0, len(filtered_arts)):
         art = filtered_arts[i]
