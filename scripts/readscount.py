@@ -45,15 +45,14 @@ def main(lims, args, logger):
         if art_out.type == "Analyte" and len(art_out.samples) == 1:
             sample = art_out.samples[0]
             sample_counter += 1
+
             # Update the total number of reads
             total_reads = sum_reads(sample, summary)
             sample.udf["Total Reads (M)"] = total_reads
             art_out.udf["Set Total Reads"] = total_reads
             logging.info(f"Total reads is {total_reads} for sample {sample.name}")
             logging.info(
-                " ###### Updating {} with {}".format(
-                    sample.name, sample.project.udf.get("Reads Min", 0)
-                )
+                f" ###### Updating {sample.name} with {sample.project.udf.get("Reads Min", 0)}"
             )
             sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 1000000
 
