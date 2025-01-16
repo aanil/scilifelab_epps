@@ -46,7 +46,9 @@ def main(lims, args, logger):
         if art.type == "ResultFile" and art.name == "AggregationLog"
     ][0]
 
-    for art_out in [art for art in process.all_outputs() if art.type == "Analyte"]:
+    # Iterate across output analytes
+    arts_out = [art for art in process.all_outputs() if art.type == "Analyte"]
+    for art_out in arts_out:
         assert (
             len(art_out.samples) == 1
         ), f"Found {len(art_out.samples)} samples for the output analyte {art_out.id}, that should not happen"
@@ -63,7 +65,7 @@ def main(lims, args, logger):
         logging.info(f"Total reads is {total_reads} for sample {sample.name}")
 
         # Set min reads sample UDF from project UDF
-        min_reads = sample.project.udf.get("Reads Min", 0) / 10e6
+        min_reads = sample.project.udf.get("Reads Min", 0) / 1e6
         logging.info(f"Updating {sample.name} UDF 'Reads Min' to {min_reads}")
         sample.udf["Reads Min"] = min_reads
 
@@ -106,23 +108,27 @@ def main(lims, args, logger):
 
 
 def sum_reads(sample, summary):
+    """For a given submitted sample and it's summary,
+    calculate the total number of reads and append to the summary.
+    """
+
+    logging.info(f"Aggregating reads of sample '{sample.name}'...")
+
     # Append to summary
     if sample.name not in summary:
         summary[sample.name] = {}
 
     expected_name = f"{sample.name} (FASTQ reads)"
-    # Look for artifacts matching the sample name and expected analyte name in the demultiplexing processes
+    # Look for artifacts matching the sample name and expected analyte name in the demultiplexing processeses
     demux_arts = lims.get_artifacts(
         sample_name=sample.name,
         process_type=list(DEMULTIPLEX.values()),
         name=expected_name,
     )
 
-    # Instantiate vars
+    # Iterate across found demux artifacts to aggregate reads and collect flowcell information
     tot_reads = 0
     flowcell_lane_list = []
-    filtered_arts = []
-    base_art = None
     for demux_art in sorted(
         demux_arts, key=lambda art: art.parent_process.date_run, reverse=True
     ):
@@ -132,85 +138,82 @@ def sum_reads(sample, summary):
 
         # Evaluate skip conditions
         if "# Reads" not in demux_art.udf:
-            logging.info("Missing or unpopulated UDF '# Reads', skipping.")
+            logging.warning("Missing or unpopulated UDF '# Reads', skipping.")
             continue
 
         if "Include reads" not in demux_art.udf:
-            logging.info("Missing or unpopulated UDF 'Include_reads' filled, skipping.")
+            logging.warning(
+                "Missing or unpopulated UDF 'Include_reads' filled, skipping."
+            )
             continue
 
-        if "Include reads" not in demux_art.udf:
-            logging.info("Missing or unpopulated UDF 'Include_reads' filled, skipping.")
-            continue
-        elif demux_art.udf["Include reads"] == "NO":
+        if demux_art.udf["Include reads"] == "NO":
             logging.info("UDF 'Include reads' is set to 'NO', skipping.")
             continue
 
-        # Look at parent samples
-        parent_arts = get_parent_inputs(demux_art)
-        for parent_art in parent_arts:
-            if sample in parent_art.samples:
-                # ONT
-                if "ONT flow cell ID" in parent_art.udf:
-                    ont_flowcell = parent_art.udf["ONT flow cell ID"]
-                    if ont_flowcell not in flowcell_lane_list:
-                        filtered_arts.append(demux_art)
-                        flowcell_lane_list.append(ont_flowcell)
-                    if ont_flowcell not in summary[sample.name]:
-                        summary[sample.name][ont_flowcell] = set()
+        assert demux_art.udf["Include reads"] == "YES"
 
-                # Illumina
-                else:
-                    flowcell_lane = "{}:{}".format(
-                        parent_art.location[0].name,
-                        parent_art.location[1].split(":")[0],
-                    )
-                    if flowcell_lane not in flowcell_lane_list:
-                        filtered_arts.append(demux_art)
-                        flowcell_lane_list.append(flowcell_lane)
-                    if parent_art.location[0].name in summary[sample.name]:
-                        summary[sample.name][parent_art.location[0].name].add(
-                            parent_art.location[1].split(":")[0]
-                        )
-                    else:
-                        summary[sample.name][parent_art.location[0].name] = set(
-                            parent_art.location[1].split(":")[0]
-                        )
+        # From the demux artifact, find the parent analyte from the actual sequencing step
+        demux_art_parents = [
+            parent
+            for parent in get_parent_inputs(demux_art)
+            if sample in parent.samples
+        ]
+        assert len(demux_art_parents) == 1
+        demux_art_parent = demux_art_parents[0]
 
-    for i in range(0, len(filtered_arts)):
-        demux_art = filtered_arts[i]
-        if demux_art.udf["Include reads"] == "YES":
-            base_art = demux_art
+        # Check whether we are dealing with dual reads
+        dual_reads = False
+        try:
+            seq_process = lims.get_processes(
+                type=list(SEQUENCING.values()),
+                inputartifactlimsid=demux_art_parent.id,
+            )[0]
+        except TypeError:
+            logging.error(
+                f"Did not manage to get sequencing process for artifact '{demux_art_parent.name}' ({demux_art_parent.id})"
+            )
+        else:
+            if (
+                "Read 2 Cycles" in seq_process.udf
+                and seq_process.udf["Read 2 Cycles"] is not None
+            ):
+                dual_reads = True
+
+        # Gather flowcell information
+        if "ONT flow cell ID" in demux_art_parent.udf:
+            # ONT
+            ont_flowcell = demux_art_parent.udf["ONT flow cell ID"]
+            if ont_flowcell not in flowcell_lane_list:
+                flowcell_lane_list.append(ont_flowcell)
+            if ont_flowcell not in summary[sample.name]:
+                summary[sample.name][ont_flowcell] = set()
+        else:
+            # Illumina
+            flowcell_and_lane = "{}:{}".format(
+                demux_art_parent.location[0].name,
+                demux_art_parent.location[1].split(":")[0],
+            )
+            if flowcell_and_lane not in flowcell_lane_list:
+                flowcell_lane_list.append(flowcell_and_lane)
+            if demux_art_parent.location[0].name in summary[sample.name]:
+                summary[sample.name][demux_art_parent.location[0].name].add(
+                    demux_art_parent.location[1].split(":")[0]
+                )
+            else:
+                summary[sample.name][demux_art_parent.location[0].name] = set(
+                    demux_art_parent.location[1].split(":")[0]
+                )
+
+        # Aggregate reads to total
+        if dual_reads:
+            tot_reads += float(demux_art.udf["# Reads"]) / 2
+        else:
             tot_reads += float(demux_art.udf["# Reads"])
 
-    # Grab the sequencing process associated
-    # Find the correct input
-    try:
-        for art_in in base_art.parent_process.all_inputs():
-            if sample.name in [s.name for s in art_in.samples]:
-                try:
-                    sq = lims.get_processes(
-                        type=list(SEQUENCING.values()), inputartifactlimsid=art_in.id
-                    )[0]
-                except TypeError:
-                    logging.error(
-                        f"Did not manage to get sequencing process for artifact {art_in.id}"
-                    )
-                else:
-                    if (
-                        "Read 2 Cycles" in sq.udf
-                        and sq.udf["Read 2 Cycles"] is not None
-                    ):
-                        tot_reads /= 2
-                break
-    except AttributeError as e:
-        print(e)
-        # Base_art is still None because no arts were found
-        logging.info(f"No demultiplexing processes found for sample {sample.name}")
-
     # Total is displayed as millions
-    tot_reads /= 10e6
-    return tot_reads
+    tot_reads_m = tot_reads / 1e6
+    return tot_reads_m
 
 
 def get_parent_inputs(art):
