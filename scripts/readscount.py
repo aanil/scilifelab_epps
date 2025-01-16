@@ -72,7 +72,7 @@ def main(args):
         # Set total reads for sample and artifact UDFs
         sample.udf["Total Reads (M)"] = total_reads
         art_out.udf["Set Total Reads"] = total_reads
-        logging.info(f"Total reads is {total_reads} for sample '{sample.name}'")
+        logging.info(f"Total reads is {total_reads} (M) for sample '{sample.name}'")
 
         # Set min reads sample UDF from project UDF
         min_reads = sample.project.udf.get("Reads Min", 0) / 1e6
