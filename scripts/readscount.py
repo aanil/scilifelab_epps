@@ -52,7 +52,7 @@ def main(lims, args, logger):
             art_out.udf["Set Total Reads"] = total_reads
             logging.info(f"Total reads is {total_reads} for sample {sample.name}")
             logging.info(
-                f" ###### Updating {sample.name} with {sample.project.udf.get("Reads Min", 0)}"
+                f"Updating {sample.name} UDF 'Reads Min' to {sample.project.udf.get("Reads Min", 0)}"
             )
             sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 1000000
 
