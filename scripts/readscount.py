@@ -54,7 +54,7 @@ def main(lims, args, logger):
             logging.info(
                 f"Updating {sample.name} UDF 'Reads Min' to {sample.project.udf.get("Reads Min", 0)}"
             )
-            sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 1000000
+            sample.udf["Reads Min"] = sample.project.udf.get("Reads Min", 0) / 10e6
 
             # Set sample UDFs for status and sequencing QC
             if sample.udf["Reads Min"] >= total_reads:
@@ -200,7 +200,7 @@ def sum_reads(sample, summary):
         logging.info(f"No demultiplexing processes found for sample {sample.name}")
 
     # Total is displayed as millions
-    tot_reads /= 1000000
+    tot_reads /= 10e6
     return tot_reads
 
 
