@@ -117,58 +117,82 @@ def dem_number(sample):
 
 
 def sum_reads(sample, summary):
+    # Append to summary
     if sample.name not in summary:
         summary[sample.name] = {}
+
     expected_name = f"{sample.name} (FASTQ reads)"
-    arts = lims.get_artifacts(
+    # Look for artifacts matching the sample name and expected analyte name in the demultiplexing processes
+    demux_arts = lims.get_artifacts(
         sample_name=sample.name,
         process_type=list(DEMULTIPLEX.values()),
         name=expected_name,
     )
+
+    # Instantiate vars
     tot_reads = 0
     flowcell_lane_list = []
     filtered_arts = []
     base_art = None
-    for art in sorted(arts, key=lambda art: art.parent_process.date_run, reverse=True):
-        if "# Reads" not in art.udf:
+    for demux_art in sorted(
+        demux_arts, key=lambda art: art.parent_process.date_run, reverse=True
+    ):
+        logging.info(
+            f"Looking at '{demux_art.name}' ({demux_art.id}) of step '{demux_art.parent_process.type.name}' ({demux_art.parent_process.id})..."
+        )
+
+        # Evaluate skip conditions
+        if "# Reads" not in demux_art.udf:
+            logging.info("Missing or unpopulated UDF '# Reads', skipping.")
             continue
 
-        if "Include reads" in art.udf:
-            parent_arts = getParentInputs(art)
-            for parent_art in parent_arts:
-                if sample in parent_art.samples:
-                    # ONT
-                    if "ONT flow cell ID" in parent_art.udf:
-                        flowcell_lane = parent_art.udf["ONT flow cell ID"]
-                        if flowcell_lane not in flowcell_lane_list:
-                            filtered_arts.append(art)
-                            flowcell_lane_list.append(flowcell_lane)
-                        if flowcell_lane not in summary[sample.name]:
-                            summary[sample.name][flowcell_lane] = set()
+        if "Include reads" not in demux_art.udf:
+            logging.info("Missing or unpopulated UDF 'Include_reads' filled, skipping.")
+            continue
 
-                    # Illumina
-                    else:
-                        flowcell_lane = "{}:{}".format(
-                            parent_art.location[0].name,
-                            parent_art.location[1].split(":")[0],
+        if "Include reads" not in demux_art.udf:
+            logging.info("Missing or unpopulated UDF 'Include_reads' filled, skipping.")
+            continue
+        elif demux_art.udf["Include reads"] == "NO":
+            logging.info("UDF 'Include reads' is set to 'NO', skipping.")
+            continue
+
+        # Look at parent samples
+        parent_arts = get_parent_inputs(demux_art)
+        for parent_art in parent_arts:
+            if sample in parent_art.samples:
+                # ONT
+                if "ONT flow cell ID" in parent_art.udf:
+                    ont_flowcell = parent_art.udf["ONT flow cell ID"]
+                    if ont_flowcell not in flowcell_lane_list:
+                        filtered_arts.append(demux_art)
+                        flowcell_lane_list.append(ont_flowcell)
+                    if ont_flowcell not in summary[sample.name]:
+                        summary[sample.name][ont_flowcell] = set()
+
+                # Illumina
+                else:
+                    flowcell_lane = "{}:{}".format(
+                        parent_art.location[0].name,
+                        parent_art.location[1].split(":")[0],
+                    )
+                    if flowcell_lane not in flowcell_lane_list:
+                        filtered_arts.append(demux_art)
+                        flowcell_lane_list.append(flowcell_lane)
+                    if parent_art.location[0].name in summary[sample.name]:
+                        summary[sample.name][parent_art.location[0].name].add(
+                            parent_art.location[1].split(":")[0]
                         )
-                        if flowcell_lane not in flowcell_lane_list:
-                            filtered_arts.append(art)
-                            flowcell_lane_list.append(flowcell_lane)
-                        if parent_art.location[0].name in summary[sample.name]:
-                            summary[sample.name][parent_art.location[0].name].add(
-                                parent_art.location[1].split(":")[0]
-                            )
-                        else:
-                            summary[sample.name][parent_art.location[0].name] = set(
-                                parent_art.location[1].split(":")[0]
-                            )
+                    else:
+                        summary[sample.name][parent_art.location[0].name] = set(
+                            parent_art.location[1].split(":")[0]
+                        )
 
     for i in range(0, len(filtered_arts)):
-        art = filtered_arts[i]
-        if art.udf["Include reads"] == "YES":
-            base_art = art
-            tot_reads += float(art.udf["# Reads"])
+        demux_art = filtered_arts[i]
+        if demux_art.udf["Include reads"] == "YES":
+            base_art = demux_art
+            tot_reads += float(demux_art.udf["# Reads"])
 
     # Grab the sequencing process associated
     # Find the correct input
@@ -200,7 +224,7 @@ def sum_reads(sample, summary):
     return tot_reads
 
 
-def getParentInputs(art):
+def get_parent_inputs(art):
     input_arts = set()
     for input_output_tuple in art.parent_process.input_output_maps:
         if input_output_tuple[1]["uri"].id == art.id:
