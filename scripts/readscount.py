@@ -22,7 +22,7 @@ TIMESTAMP: str = dt.now().strftime("%y%m%d_%H%M%S")
 DEMULTIPLEX = {
     "13": "Bcl Conversion & Demultiplexing (Illumina SBS) 4.0",
     "3205": "ONT Finish Sequencing v3",  # TODO Update this to reflect prod
-    "3105": "Bcl Conversion & Demultiplexing (AVITI) v1.0" # TODO Update this to reflect prod
+    "3105": "Bcl Conversion & Demultiplexing (AVITI) v1.0",  # TODO Update this to reflect prod
 }
 SUMMARY = {
     "356": "Project Summary 1.3",
@@ -35,7 +35,7 @@ SEQUENCING = {
     "1908": "Illumina Sequencing (NextSeq) v1.0",
     "2612": "NovaSeqXPlus Run v1.0",
     "2955": "ONT Start Sequencing v3.0",  # TODO Update this to reflect prod
-    "3113": "AVITI Run v1.0" # TODO Update this to reflect prod
+    "3113": "AVITI Run v1.0",  # TODO Update this to reflect prod
 }
 
 
@@ -60,9 +60,9 @@ def main(args):
         key=lambda art: art.name,
     )
     for art_out in arts_out:
-        assert (
-            len(art_out.samples) == 1
-        ), f"Found {len(art_out.samples)} samples for the output analyte {art_out.id}, that should not happen"
+        assert len(art_out.samples) == 1, (
+            f"Found {len(art_out.samples)} samples for the output analyte {art_out.id}, that should not happen"
+        )
 
         sample = art_out.samples[0]
         sample_counter += 1
@@ -142,7 +142,9 @@ def sum_reads(sample, summary):
         name=f"{sample.name} (FASTQ reads)",
     )
     if not demux_arts:
-        raise AssertionError(f"Could not find any demultiplexing artifacts for sample {sample.name}.")
+        raise AssertionError(
+            f"Could not find any demultiplexing artifacts for sample {sample.name}."
+        )
 
     # Check for any ongoing demux steps
     ongoing_demux_arts = []
@@ -150,7 +152,12 @@ def sum_reads(sample, summary):
         if demux_art.parent_process.date_run is None:
             ongoing_demux_arts.append(demux_art)
     if ongoing_demux_arts:
-        ongoing_demux_steps_str = ", ".join([f"'{art.parent_process.type.name}' ({art.parent_process.id})" for art in ongoing_demux_arts])
+        ongoing_demux_steps_str = ", ".join(
+            [
+                f"'{art.parent_process.type.name}' ({art.parent_process.id})"
+                for art in ongoing_demux_arts
+            ]
+        )
         raise AssertionError(
             f"Sample {sample.name} has demux artifacts in ongoing steps:"
             + f" {ongoing_demux_steps_str}. Finish them before proceeding."
