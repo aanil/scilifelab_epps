@@ -197,7 +197,7 @@ def sum_reads(sample, summary):
             # Parent of demux artifact is a sequencing process output (ONT)
             seq_process = demux_art_parent.parent_process
         else:
-            # Parent of demux artifact is a sequencing process input (Illumina)
+            # Parent of demux artifact is a sequencing process input (Illumina, AVITI)
             seq_process = lims.get_processes(
                 type=list(SEQUENCING.values()),
                 inputartifactlimsid=demux_art_parent.id,
@@ -221,7 +221,7 @@ def sum_reads(sample, summary):
             if ont_flowcell not in summary[sample.name]:
                 summary[sample.name][ont_flowcell] = set()
         else:
-            # Illumina
+            # Illumina and AVITI
             flowcell_and_lane = "{}:{}".format(
                 demux_art_parent.location[0].name,
                 demux_art_parent.location[1].split(":")[0],
