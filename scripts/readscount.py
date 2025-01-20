@@ -125,7 +125,7 @@ def main(args):
 
 
 def sum_reads(sample, summary):
-    """For a given submitted sample and it's summary,
+    """For a given submitted sample and a summary object,
     calculate the total number of reads and append to the summary.
     """
 
