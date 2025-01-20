@@ -2,7 +2,15 @@
 
 ## 20241220.1
 
-Introduce EPP to fetch last recorded derived sample UDF.
+Rebuild EPP to fetch last recorded derived sample UDF.
+
+## 20250116.1
+
+Ruff 0.9.2 formatting.
+
+## 20250108.1
+
+Replace PR Label checker with a less opaque action.
 
 ## 20241211.1
 
