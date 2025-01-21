@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import logging
 from typing import Any
 
 from genologics.entities import Artifact, Process
@@ -66,6 +67,13 @@ def fetch_from_arg(
             raise on_fail(msg)
         else:
             return on_fail
+
+    log_str = (
+        f"Fetched UDF '{arg_dict['udf']}': {value}"
+        + f"{' (recursive)' if arg_dict['recursive'] else ''}"
+        + f" from {arg_dict['source']} '{source_name}'."
+    )
+    logging.info(log_str)
 
     return value
 
