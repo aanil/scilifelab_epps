@@ -142,7 +142,7 @@ def sum_reads(sample, summary):
         name=f"{sample.name} (FASTQ reads)",
     )
     if not demux_arts:
-        raise AssertionError(
+        logging.warning(
             f"Could not find any demultiplexing artifacts for sample {sample.name}."
         )
 
@@ -158,7 +158,7 @@ def sum_reads(sample, summary):
                 for art in ongoing_demux_arts
             ]
         )
-        raise AssertionError(
+        logging.warning(
             f"Sample {sample.name} has demux artifacts in ongoing steps:"
             + f" {ongoing_demux_steps_str}. Finish them before proceeding."
         )
