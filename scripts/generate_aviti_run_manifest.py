@@ -485,9 +485,13 @@ def main(args: Namespace):
     # Move manifest(s)
     logging.info("Moving run manifest to ngi-nas-ns...")
     try:
+        dst = f"/srv/ngi-nas-ns/samplesheets/Aviti/{dt.now().year}"
+        if not os.path.exists(dst):
+            logging.info(f"Happy new year! Creating {dst}")
+            os.mkdir(dst)
         shutil.copyfile(
             zip_file,
-            f"/srv/ngi-nas-ns/samplesheets/Aviti/{dt.now().year}/{zip_file}",
+            f"{dst}/{zip_file}",
         )
         os.remove(zip_file)
     except:
