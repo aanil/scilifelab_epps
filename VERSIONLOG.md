@@ -1,6 +1,6 @@
 # Scilifelab_epps Version Log
 
-## 20241222.2
+## 20250122.2
 
 Rebuild EPP to fetch last recorded derived sample UDF.
 
