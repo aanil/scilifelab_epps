@@ -1,8 +1,12 @@
 # Scilifelab_epps Version Log
 
-## 20241220.1
+## 20241222.2
 
 Rebuild EPP to fetch last recorded derived sample UDF.
+
+## 20250122.1
+
+Create yearly dir for AVITI run manifests.
 
 ## 20250116.1
 
