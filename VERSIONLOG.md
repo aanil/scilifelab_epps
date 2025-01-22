@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250122.1
+
+Create yearly dir for AVITI run manifests.
+
 ## 20250116.1
 
 Ruff 0.9.2 formatting.
