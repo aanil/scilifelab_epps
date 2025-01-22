@@ -18,25 +18,22 @@ from scilifelab_epps.wrapper import epp_decorator
 
 TIMESTAMP: str = dt.now().strftime("%y%m%d_%H%M%S")
 
-# Master step IDs and names
-DEMULTIPLEX = {
-    "13": "Bcl Conversion & Demultiplexing (Illumina SBS) 4.0",
-    "3205": "ONT Finish Sequencing v3",  # TODO Update this to reflect prod
-    "3105": "Bcl Conversion & Demultiplexing (AVITI) v1.0",  # TODO Update this to reflect prod
-}
-SUMMARY = {
-    "356": "Project Summary 1.3",
-}
-SEQUENCING = {
-    "38": "Illumina Sequencing (Illumina SBS) 4.0",
-    "46": "MiSeq Run (MiSeq) 4.0",
-    "714": "Illumina Sequencing (HiSeq X) 1.0",
-    "1454": "AUTOMATED - NovaSeq Run (NovaSeq 6000 v2.0)",
-    "1908": "Illumina Sequencing (NextSeq) v1.0",
-    "2612": "NovaSeqXPlus Run v1.0",
-    "2955": "ONT Start Sequencing v3.0",  # TODO Update this to reflect prod
-    "3113": "AVITI Run v1.0",  # TODO Update this to reflect prod
-}
+# Step names to look for
+DEMULTIPLEX_STEPS = [
+    "Bcl Conversion & Demultiplexing (Illumina SBS) 4.0",
+    "ONT Finish Sequencing v3",
+    "Bcl Conversion & Demultiplexing (AVITI) v1.0",
+]
+SEQUENCING_STEPS = [
+    "Illumina Sequencing (Illumina SBS) 4.0",
+    "MiSeq Run (MiSeq) 4.0",
+    "Illumina Sequencing (HiSeq X) 1.0",
+    "AUTOMATED - NovaSeq Run (NovaSeq 6000 v2.0)",
+    "Illumina Sequencing (NextSeq) v1.0",
+    "NovaSeqXPlus Run v1.0",
+    "ONT Start Sequencing v3.0",
+    "AVITI Run v1.0",
+]
 
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
@@ -138,7 +135,7 @@ def sum_reads(sample, summary):
     # Look for artifacts matching the sample name and expected analyte name in the demultiplexing processeses
     demux_arts = lims.get_artifacts(
         sample_name=sample.name,
-        process_type=list(DEMULTIPLEX.values()),
+        process_type=DEMULTIPLEX_STEPS,
         name=f"{sample.name} (FASTQ reads)",
     )
     if not demux_arts:
@@ -200,13 +197,13 @@ def sum_reads(sample, summary):
         demux_art_parent = demux_art_parents[0]
 
         # Two cases to consider:
-        if demux_art_parent.parent_process.type.name in SEQUENCING.values():
+        if demux_art_parent.parent_process.type.name in SEQUENCING_STEPS:
             # Parent of demux artifact is a sequencing process output (ONT)
             seq_process = demux_art_parent.parent_process
         else:
             # Parent of demux artifact is a sequencing process input (Illumina, AVITI)
             seq_process = lims.get_processes(
-                type=list(SEQUENCING.values()),
+                type=SEQUENCING_STEPS,
                 inputartifactlimsid=demux_art_parent.id,
             )[0]
 
