@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250122.1
+
+Shorten MinKNOW samplesheet name, so the timestamp is visible in the MinKNOW file explorer. Also add happy-new-year dir creation.
+
 ## 20250116.1
 
 Ruff 0.9.2 formatting.
