@@ -1,8 +1,16 @@
 # Scilifelab_epps Version Log
 
-## 20250122.1
+## 20250123.1
 
 Shorten MinKNOW samplesheet name, so the timestamp is visible in the MinKNOW file explorer. Also add happy-new-year dir creation.
+
+## 20250122.2
+
+Rebuild EPP to fetch last recorded derived sample UDF.
+
+## 20250122.1
+
+Create yearly dir for AVITI run manifests.
 
 ## 20250116.1
 
