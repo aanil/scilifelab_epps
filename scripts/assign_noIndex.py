@@ -8,6 +8,7 @@ from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
 from genologics.lims import Lims
 
+from scilifelab_epps.utils.udf_tools import get_art_tuples
 from scilifelab_epps.wrapper import epp_decorator
 
 DESC = """Script to automatically assign the 'noIndex' reagent label
@@ -35,35 +36,39 @@ def main(args):
     if args.label == "input":
         arts_list = process.all_inputs()
     elif args.label == "output":
+        if get_art_tuples(process) == []:
+            raise AssertionError(
+                "Script arg --label set to 'output', but step appears to have no outputs."
+            )
         arts_list = process.all_outputs()
     else:
         raise ValueError(f"Invalid value '{args.label}' for script argument 'label'")
 
     # Filter for unlabeled analytes
     unlabeled_analytes = []
-    for analyte in arts_list:
-        if not analyte.type == "Analyte":
+    for art in arts_list:
+        if not art.type == "Analyte":
             continue
-        if analyte.reagent_labels:
+        if art.reagent_labels:
             logging.info(
-                f"{args.label.capitalize()} '{analyte.name}' is already labeled ({analyte.reagent_labels}), skipping."
+                f"{args.label.capitalize()} '{art.name}' is already labeled ({art.reagent_labels}), skipping."
             )
             continue
-        unlabeled_analytes.append(analyte)
+        unlabeled_analytes.append(art)
     logging.info(f"Found {len(unlabeled_analytes)} unlabeled {args.label} analytes.")
 
     xml_element_noIndex = ET.Element("reagent-label", name="NoIndex")
     failed_analytes = []
-    for analyte in unlabeled_analytes:
+    for art in unlabeled_analytes:
         try:
-            analyte.root.append(xml_element_noIndex)
-            analyte.put()
+            art.root.append(xml_element_noIndex)
+            art.put()
             logging.info(
-                f"Assigned 'noIndex' reagent label to {args.label} '{analyte.name}'"
+                f"Assigned 'noIndex' reagent label to {args.label} '{art.name}'"
             )
         except Exception as e:
             logging.error(e)
-            failed_analytes.append(analyte)
+            failed_analytes.append(art)
 
     if failed_analytes:
         logging.error(
