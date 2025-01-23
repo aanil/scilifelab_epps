@@ -163,11 +163,12 @@ def sum_reads(sample, summary):
     # Iterate across found demux artifacts to aggregate reads and collect flowcell information
     tot_reads = 0
     flowcell_lane_list = []
-    for demux_art in sorted(
-        demux_arts, key=lambda art: art.parent_process.date_run, reverse=True
-    ):
+    for demux_art in demux_arts:
         logging.info(
-            f"Looking at '{demux_art.name}' ({demux_art.id}) of step '{demux_art.parent_process.type.name}' ({demux_art.parent_process.id})..."
+            f"Looking at '{demux_art.name}' ({demux_art.id}) of step"
+            + f" '{demux_art.parent_process.type.name}'"
+            + f" ({demux_art.parent_process.id})"
+            + f"{' (ONGOING)...' if demux_art.parent_process.date_run is None else '...'}"
         )
 
         # Evaluate skip conditions
@@ -243,9 +244,14 @@ def sum_reads(sample, summary):
 
         # Aggregate reads to total
         if dual_reads:
-            tot_reads += float(demux_art.udf["# Reads"]) / 2
+            tallied_reads = float(demux_art.udf["# Reads"]) / 2
         else:
-            tot_reads += float(demux_art.udf["# Reads"])
+            tallied_reads = float(demux_art.udf["# Reads"])
+
+        logging.info(
+            f"Tallied {int(tallied_reads):,} {'dual' if dual_reads else 'single'} reads"
+        )
+        tot_reads += tallied_reads
 
     # Total is displayed as millions
     tot_reads_m = tot_reads / 1e6
