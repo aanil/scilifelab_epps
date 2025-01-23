@@ -37,7 +37,7 @@ def main(args):
     elif args.label == "output":
         arts_list = process.all_outputs()
     else:
-        raise ValueError(f"Invalid value '{args.label}' for argument 'label'")
+        raise ValueError(f"Invalid value '{args.label}' for script argument 'label'")
 
     # Filter for unlabeled analytes
     unlabeled_analytes = []
