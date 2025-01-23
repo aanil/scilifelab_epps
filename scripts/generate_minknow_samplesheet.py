@@ -473,7 +473,7 @@ def generate_MinKNOW_samplesheet(args):
     ), "All rows must have different flow cell positions and IDs"
 
     # Generate samplesheet
-    file_name = f"MinKNOW_samplesheet_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}.csv"
+    file_name = f"ONT_ss_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}.csv"
     write_minknow_csv(df, file_name)
 
     return file_name
@@ -496,9 +496,13 @@ def main(args):
 
     logging.info("Moving samplesheet to ngi-nas-ns...")
     try:
+        dst = f"/srv/ngi-nas-ns/samplesheets/nanopore/{dt.now().year}"
+        if not os.path.exists(dst):
+            logging.info(f"Happy new year! Creating {dst}")
+            os.mkdir(dst)
         shutil.copyfile(
             file_name,
-            f"/srv/ngi-nas-ns/samplesheets/nanopore/{dt.now().year}/{file_name}",
+            f"{dst}/{file_name}",
         )
         os.remove(file_name)
     except:
