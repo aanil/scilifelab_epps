@@ -261,12 +261,15 @@ def get_kit_string(process: Process) -> str:
 
 
 def sanitize_string(string: str) -> str:
-    """Remove potentially problematic characters from string."""
+    """Remove parenthesized content and potentially problematic characters from string."""
 
     # Patterns
+    parenthesized_content = re.compile(r"\([^()]*\)")
     disallowed_characters = re.compile("[^a-zA-Z0-9_-]")
     consecutive_underscores = re.compile("__+")
 
+    # Remove parenthesized content
+    string = parenthesized_content.sub("", string)
     # Replace any disallowed characters with underscores
     string = disallowed_characters.sub("_", string)
     # Remove any consecutive underscores
