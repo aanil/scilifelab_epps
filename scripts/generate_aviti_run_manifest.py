@@ -333,6 +333,7 @@ def make_manifest(
         samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
 
     elif manifest_type == "trimmed":
+        # Equalize index lengths to shortest
         min_idx1_len = df["Index1"].apply(len).min()
         min_idx2_len = df["Index2"].apply(len).min()
         df["Index1"] = df["Index1"].apply(lambda x: x[:min_idx1_len])
@@ -341,7 +342,15 @@ def make_manifest(
         samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
 
     elif manifest_type == "phix":
+        # Subset to PhiX controls
         df = df[df["Project"] == "Control"]
+        # Trim PhiX indices to match run settings
+        idx1_cycles = int(process.udf.get("Index Read 1", 0))
+        idx2_cycles = int(process.udf.get("Index Read 2", 0))
+        if idx1_cycles < df["Index1"].apply(len).max():
+            df["Index1"] = df["Index1"].apply(lambda x: x[:idx1_cycles])
+        if idx2_cycles < df["Index2"].apply(len).max():
+            df["Index2"] = df["Index2"].apply(lambda x: x[:idx2_cycles])
         samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
 
     elif manifest_type == "empty":
