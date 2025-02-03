@@ -261,12 +261,15 @@ def get_kit_string(process: Process) -> str:
 
 
 def sanitize_string(string: str) -> str:
-    """Remove potentially problematic characters from string."""
+    """Remove parenthesized content and potentially problematic characters from string."""
 
     # Patterns
+    parenthesized_content = re.compile(r"\([^()]*\)")
     disallowed_characters = re.compile("[^a-zA-Z0-9_-]")
     consecutive_underscores = re.compile("__+")
 
+    # Remove parenthesized content
+    string = parenthesized_content.sub("", string)
     # Replace any disallowed characters with underscores
     string = disallowed_characters.sub("_", string)
     # Remove any consecutive underscores
@@ -473,7 +476,7 @@ def generate_MinKNOW_samplesheet(args):
     ), "All rows must have different flow cell positions and IDs"
 
     # Generate samplesheet
-    file_name = f"MinKNOW_samplesheet_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}.csv"
+    file_name = f"ONT_ss_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}.csv"
     write_minknow_csv(df, file_name)
 
     return file_name
@@ -496,9 +499,13 @@ def main(args):
 
     logging.info("Moving samplesheet to ngi-nas-ns...")
     try:
+        dst = f"/srv/ngi-nas-ns/samplesheets/nanopore/{dt.now().year}"
+        if not os.path.exists(dst):
+            logging.info(f"Happy new year! Creating {dst}")
+            os.mkdir(dst)
         shutil.copyfile(
             file_name,
-            f"/srv/ngi-nas-ns/samplesheets/nanopore/{dt.now().year}/{file_name}",
+            f"{dst}/{file_name}",
         )
         os.remove(file_name)
     except:

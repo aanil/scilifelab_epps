@@ -1,8 +1,16 @@
 # Scilifelab_epps Version Log
 
-## 20250122.3
+## 20250201.1
 
 Renovate reads aggregation EPP and include ONT / AVITI.
+
+## 20250123.2
+
+Remove parenthesized content from sample names in MinKNOW samplesheet. This is so the input sample location can be shown easily, without having to change the nature of the sequencing step or interfering with the samplesheet downstream.
+
+## 20250123.1
+
+Shorten MinKNOW samplesheet name, so the timestamp is visible in the MinKNOW file explorer. Also add happy-new-year dir creation.
 
 ## 20250122.2
 
