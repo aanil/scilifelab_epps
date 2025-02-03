@@ -323,6 +323,9 @@ def make_manifest(
         [
             "[SETTINGS]",
             "SettingName, Value",
+            # Mismatch thresholds set to 0 to allow identical I1 xor I2
+            "I1MismatchThreshold, 0",
+            "I2MismatchThreshold, 0",
         ]
     )
 
