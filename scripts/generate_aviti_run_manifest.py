@@ -13,7 +13,7 @@ import pandas as pd
 from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
 from genologics.lims import Lims
-from Levenshtein import hamming as distance
+from Levenshtein import distance
 
 from data.Chromium_10X_indexes import Chromium_10X_indexes
 from scilifelab_epps.epp import upload_file
