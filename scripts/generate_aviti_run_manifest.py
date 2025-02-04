@@ -319,16 +319,6 @@ def make_manifest(
         ]
     )
 
-    settings_section = "\n".join(
-        [
-            "[SETTINGS]",
-            "SettingName, Value",
-            # Mismatch thresholds set to 0 to allow identical I1 xor I2
-            "I1MismatchThreshold, 0",
-            "I2MismatchThreshold, 0",
-        ]
-    )
-
     if manifest_type == "untrimmed":
         samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
 
@@ -345,8 +335,8 @@ def make_manifest(
         # Subset to PhiX controls
         df = df[df["Project"] == "Control"]
         # Trim PhiX indices to match run settings
-        idx1_cycles = int(process.udf.get("Index Read 1", 0))
-        idx2_cycles = int(process.udf.get("Index Read 2", 0))
+        idx1_cycles = int(process.udf.get("Index Read 1"))
+        idx2_cycles = int(process.udf.get("Index Read 2"))
         if idx1_cycles < df["Index1"].apply(len).max():
             df["Index1"] = df["Index1"].apply(lambda x: x[:idx1_cycles])
         if idx2_cycles < df["Index2"].apply(len).max():
@@ -359,11 +349,77 @@ def make_manifest(
     else:
         raise AssertionError("Invalid manifest type.")
 
+    settings_section = "\n".join(
+        [
+            "[SETTINGS]",
+            "SettingName, Value",
+        ]
+    )
+
+    # Customize mismatch thresholds, if necessary
+    if manifest_type != "empty":
+        try:
+            i1_mismatch, i2_mismatch = get_custom_mistmatch_thresholds(df)
+        except AssertionError as e:
+            logging.error(e, exc_info=True)
+            logging.error(
+                f"Could not generate {manifest_type} manifest without index collisions. Skipping."
+            )
+            return (file_name, None)
+
+        settings_section += "\n" + "\n".join(
+            [
+                f"I1MismatchThreshold, {i1_mismatch}",
+                f"I2MismatchThreshold, {i2_mismatch}",
+            ]
+        )
+
+    # Write manifest
     manifest_contents = "\n\n".join(
         [runValues_section, settings_section, samples_section]
     )
 
     return (file_name, manifest_contents)
+
+
+def get_custom_mistmatch_thresholds(df: pd.DataFrame) -> tuple[int, int]:
+    # Defaults, according to Element documentation
+    i1MismatchThreshold = 1
+    i2MismatchThreshold = 1
+
+    # Collect distances
+    idx1_dists = []
+    idx2_dists = []
+    total_dists = []
+    # Iterate across all sample pairings per lane
+    for lane in df["Lane"].unique():
+        df_lane = df[df["Lane"] == lane]
+        df_lane.reset_index(drop=True, inplace=True)
+        for i in range(0, len(df_lane)):
+            for j in range(i + 1, len(df_lane)):
+                # TODO skip NNN
+                idx1_dist = distance(df_lane["Index1"][i], df_lane["Index1"][j])
+                idx2_dist = distance(df_lane["Index2"][i], df_lane["Index2"][j])
+
+                # Collect distances between all sample pairings on index and index-pair level
+                idx1_dists.append(idx1_dist)
+                idx2_dists.append(idx2_dist)
+                total_dists.append(idx1_dist + idx2_dist)
+
+    if min(total_dists) == 0:
+        raise AssertionError("Total index distance of 0 detected.")
+    if min(idx1_dists) <= 2:
+        logging.warning(
+            "Minimum distance between Index1 sequences is at or below 2. Reducing allowed mismatches from 1 to 0."
+        )
+        i1MismatchThreshold = 0
+    if min(idx2_dists) <= 2:
+        logging.warning(
+            "Minimum distance between Index2 sequences is at or below 2. Reducing allowed mismatches from 1 to 0."
+        )
+        i2MismatchThreshold = 0
+
+    return (i1MismatchThreshold, i2MismatchThreshold)
 
 
 def check_distances(rows: list[dict], threshold=2) -> None:
@@ -475,7 +531,8 @@ def main(args: Namespace):
 
     # Write manifest(s)
     for file, content in manifests:
-        open(file, "w").write(content)
+        if content:
+            open(file, "w").write(content)
 
     # Zip manifest(s)
     zip_file = f"{manifest_root_name}.zip"
