@@ -45,11 +45,16 @@ def main(args):
     error_counter = 0
 
     summary = {}  # { sample_name : { flowcell : { lane1, lane2, ... } } }  # dict -> dict -> set
-    log_artifact = [
-        art
-        for art in process.all_outputs()
-        if art.type == "ResultFile" and art.name == "AggregationSummary"
-    ][0]
+    try:
+        summary_artifact = [
+            art
+            for art in process.all_outputs()
+            if art.type == "ResultFile" and art.name == "AggregationSummary"
+        ][0]
+    except IndexError:
+        # Skip the summary artifact, made as a patch for open steps
+        summary_artifact = None
+        logging.info("Could not find the summary file slot artifact, skipping.")
 
     # Iterate across output analytes
     arts_out = sorted(
@@ -112,13 +117,18 @@ def main(args):
                 "{},{},{},{}\n".format(sample, n_flowcells, n_lanes, ";".join(view))
             )
 
-    # Upload the log file
-    try:
-        attach_file(os.path.join(os.getcwd(), "AggregationSummary.csv"), log_artifact)
-        logging.info(f"Updated {sample_counter} samples with {error_counter} errors")
-    except AttributeError:
-        # Happens if the log artifact does not exist, if the step has been started before the configuration changes
-        logging.info("Could not upload the log file")
+    # Upload the summary file
+    if summary_artifact is not None:
+        try:
+            attach_file(
+                os.path.join(os.getcwd(), "AggregationSummary.csv"), summary_artifact
+            )
+            logging.info(
+                f"Updated {sample_counter} samples with {error_counter} errors"
+            )
+        except AttributeError:
+            # Happens if the summary artifact does not exist, if the step has been started before the configuration changes
+            logging.info("Could not upload the summary file")
 
 
 def sum_reads(sample, summary):
