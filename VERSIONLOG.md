@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250205.1
+
+Introduce patch to reads aggregation EPP so opened steps don't have to be re-started from scratch.
+
 ## 20250201.1
 
 Renovate reads aggregation EPP and include ONT / AVITI.
