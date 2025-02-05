@@ -52,7 +52,7 @@ def epp_decorator(script_path: str, timestamp: str):
             # Start logging
             logging.info(f"Script '{script_name}' started at {timestamp}.")
             logging.info(
-                f"Launched in step '{process.type.name}' ({process.id}) by {process.technician.name}."
+                f"Launched in step '{process.type.name}' ({process.id}) opened by {process.technician.name}."
             )
             args_str = "\n\t".join(
                 [f"'{arg}': {getattr(args, arg)}" for arg in vars(args)]
