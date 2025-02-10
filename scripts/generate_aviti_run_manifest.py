@@ -292,6 +292,10 @@ def make_manifest(
     manifest_root_name: str,
     manifest_type: str,
 ) -> tuple[str, str]:
+    # Get the index cycles from the step fields
+    idx1_cycles = int(process.udf.get("Index Read 1"))
+    idx2_cycles = int(process.udf.get("Index Read 2"))
+
     # Make copy of input df and subset columns to include in manifest
     df = df_samples_and_controls[
         [
@@ -318,28 +322,36 @@ def make_manifest(
         ]
     )
 
+    # Build the [SAMPLES] section of the manifest, depending on the manifest type.
     if manifest_type == "untrimmed":
         samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
 
-    elif manifest_type == "trimmed":
-        # Equalize index lengths to shortest
-        min_idx1_len = df["Index1"].apply(len).min()
-        min_idx2_len = df["Index2"].apply(len).min()
-        df["Index1"] = df["Index1"].apply(lambda x: x[:min_idx1_len])
-        df["Index2"] = df["Index2"].apply(lambda x: x[:min_idx2_len])
+    elif manifest_type == "trimmed" or manifest_type == "phix":
+        if manifest_type == "phix":
+            # Subset to PhiX controls
+            df = df[df["Project"] == "Control"]
 
-        samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
+        # Make index lengths conform to number of cycles
+        for idx, cycles in zip(["Index1", "Index2"], [idx1_cycles, idx2_cycles]):
+            # If there are any indexes shorter than the number of cycles
+            if not df[df[idx].apply(len) < cycles].empty:
+                for row in df[df[idx].apply(len) < cycles].to_dict(orient="records"):
+                    logging.error(
+                        f"'{row['SampleName']}' has {idx} '{row[idx]}' of length {len(row[idx])} shorter than {cycles} cycles."
+                    )
+                logging.error(
+                    f"Could not generate {manifest_type} manifest because indexes are shorter than the number of index cycles. Skipping."
+                )
+                return (file_name, None)
+            # If there are any indexes longer than the number of cycles
+            if not df[df[idx].apply(len) > cycles].empty:
+                # For each one, log how it's trimmed
+                for row in df[df[idx].apply(len) > cycles].to_dict(orient="records"):
+                    logging.info(
+                        f"Trimming '{row['SampleName']}' {idx} '{row[idx]}' of length {len(row[idx])} to {cycles} cycles."
+                    )
+            df[idx] = df[idx].apply(lambda x: x[:cycles])
 
-    elif manifest_type == "phix":
-        # Subset to PhiX controls
-        df = df[df["Project"] == "Control"]
-        # Trim PhiX indices to match run settings
-        idx1_cycles = int(process.udf.get("Index Read 1"))
-        idx2_cycles = int(process.udf.get("Index Read 2"))
-        if idx1_cycles < df["Index1"].apply(len).max():
-            df["Index1"] = df["Index1"].apply(lambda x: x[:idx1_cycles])
-        if idx2_cycles < df["Index2"].apply(len).max():
-            df["Index2"] = df["Index2"].apply(lambda x: x[:idx2_cycles])
         samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
 
     elif manifest_type == "empty":
@@ -358,6 +370,9 @@ def make_manifest(
     # Customize mismatch thresholds, if necessary
     if manifest_type != "empty":
         try:
+            logging.info(
+                f"Getting custom mismatch thresholds for {manifest_type} manifest..."
+            )
             i1_mismatch, i2_mismatch = get_custom_mistmatch_thresholds(df)
         except AssertionError as e:
             logging.error(e, exc_info=True)
