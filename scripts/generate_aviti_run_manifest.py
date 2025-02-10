@@ -173,9 +173,9 @@ def get_manifests(process: Process, manifest_root_name: str) -> list[tuple[str, 
         )
 
         # Record PhiX UDFs for each output artifact
-        phix_loaded: bool = pool.udf["% phiX"] != 0
-        phix_set_name = pool.udf.get("Element PhiX Set", None)
-        if phix_loaded:
+        phix_loaded: float = pool.udf.get("% phiX", 0)
+        phix_set_name: str | None = pool.udf.get("Element PhiX Set", None)
+        if phix_loaded != 0:
             assert phix_set_name is not None, (
                 "PhiX controls loaded but no kit specified."
             )
