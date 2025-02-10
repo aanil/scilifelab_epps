@@ -169,7 +169,7 @@ def get_manifests(process: Process, manifest_root_name: str) -> list[tuple[str, 
         # Get sample-label linkage via database
         sample2label: dict[str, str] = get_pool_sample_label_mapping(pool)
         assert len(set(pool.reagent_labels)) == len(pool.reagent_labels), (
-            "Detected non-unique reagent labels."
+            f"Detected non-unique reagent labels in lane {lane}"
         )
 
         # Record PhiX UDFs for each output artifact
