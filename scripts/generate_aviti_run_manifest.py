@@ -158,7 +158,6 @@ def get_manifests(process: Process, manifest_root_name: str) -> list[tuple[str, 
 
     # Assert lanes
     lanes = [art_out.location[1].split(":")[0] for art_out in arts_out]
-    lanes.sort()
     assert set(lanes) == {"1"} or set(lanes) == {
         "1",
         "2",
@@ -166,7 +165,7 @@ def get_manifests(process: Process, manifest_root_name: str) -> list[tuple[str, 
 
     # Iterate over pool / lane
     sample_rows = []
-    for pool, lane in zip(arts_out, lanes):
+    for pool, lane in sorted(zip(arts_out, lanes), key=lambda x: x[1]):
         # Get sample-label linkage via database
         sample2label: dict[str, str] = get_pool_sample_label_mapping(pool)
         assert len(set(pool.reagent_labels)) == len(pool.reagent_labels), (
