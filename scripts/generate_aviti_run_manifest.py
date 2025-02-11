@@ -145,7 +145,9 @@ def dict_to_manifest_col(d: dict) -> str:
     return s
 
 
-def get_manifests(process: Process, manifest_root_name: str) -> list[tuple[str, str]]:
+def get_manifests(
+    process: Process, manifest_root_name: str
+) -> list[tuple[str, str | None]]:
     """Generate multiple manifests, grouping samples by index multiplicity and length,
     adding PhiX controls of appropriate lengths as needed.
     """
@@ -174,13 +176,11 @@ def get_manifests(process: Process, manifest_root_name: str) -> list[tuple[str, 
 
         # Record PhiX UDFs for each output artifact
         phix_loaded: float = pool.udf.get("% phiX", 0)
-        phix_set_name: str | None = pool.udf.get("Element PhiX Set", None)
+        phix_set_name: str = pool.udf.get("Element PhiX Set", "")
         if phix_loaded != 0:
-            assert phix_set_name is not None, (
-                "PhiX controls loaded but no kit specified."
-            )
+            assert phix_set_name != "", "PhiX controls loaded but no kit specified."
         else:
-            assert phix_set_name is None, "PhiX controls specified but not loaded."
+            assert phix_set_name == "", "PhiX controls specified but not loaded."
 
         # Collect rows for each sample
         for sample in pool.samples:
@@ -273,7 +273,7 @@ def get_manifests(process: Process, manifest_root_name: str) -> list[tuple[str, 
         check_distances(rows_to_check)
 
     # Start building manifests
-    manifests: list[tuple[str, str]] = []
+    manifests: list[tuple[str, str | None]] = []
     for manifest_type in ["untrimmed", "trimmed", "phix", "empty"]:
         manifest_name, manifest_contents = make_manifest(
             df_samples_and_controls,
@@ -291,7 +291,7 @@ def make_manifest(
     process: Process,
     manifest_root_name: str,
     manifest_type: str,
-) -> tuple[str, str]:
+) -> tuple[str, str | None]:
     # Get the index cycles from the step fields
     idx1_cycles = int(process.udf.get("Index Read 1"))
     idx2_cycles = int(process.udf.get("Index Read 2"))
@@ -541,7 +541,7 @@ def main(args: Namespace):
     manifest_root_name = f"AVITI_run_manifest_{flowcell_id}_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}"
 
     # Create manifest(s)
-    manifests: list[tuple[str, str]] = get_manifests(process, manifest_root_name)
+    manifests: list[tuple[str, str | None]] = get_manifests(process, manifest_root_name)
 
     # Write manifest(s)
     for file, content in manifests:
