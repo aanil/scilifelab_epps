@@ -326,7 +326,7 @@ def make_manifest(
     if manifest_type == "untrimmed":
         samples_section = f"[SAMPLES]\n{df.to_csv(index=None, header=True)}"
 
-    elif manifest_type == "trimmed" or manifest_type == "phix":
+    elif manifest_type in ["trimmed", "phix"]:
         if manifest_type == "phix":
             # Subset to PhiX controls
             df = df[df["Project"] == "Control"]
@@ -368,7 +368,7 @@ def make_manifest(
     )
 
     # Customize mismatch thresholds, if necessary
-    if manifest_type != "empty":
+    if manifest_type not in ["untrimmed", "empty"]:
         try:
             logging.info(
                 f"Getting custom mismatch thresholds for {manifest_type} manifest..."
