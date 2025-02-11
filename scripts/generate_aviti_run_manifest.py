@@ -545,18 +545,16 @@ def main(args: Namespace):
     # Create manifest(s)
     manifests: list[tuple[str, str | None]] = get_manifests(process, manifest_root_name)
 
-    # Write manifest(s)
-    for file, content in manifests:
-        if content:
-            open(file, "w").write(content)
-
-    # Zip manifest(s)
+    # Write and zip manifest(s)
     zip_file = f"{manifest_root_name}.zip"
-    files = [file for file, _ in manifests]
     with ZipFile(zip_file, "w") as zip_stream:
-        for file in files:
-            zip_stream.write(file)
-            os.remove(file)
+        for file, content in manifests:
+            if content:
+                open(file, "w").write(content)
+                zip_stream.write(file)
+                os.remove(file)
+            else:
+                logging.warning(f"Not writing {file} due to missing contents.")
 
     # Upload manifest(s)
     logging.info("Uploading run manifest to LIMS...")
