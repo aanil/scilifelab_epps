@@ -377,7 +377,7 @@ def make_manifest(
             )
             i1_mismatch, i2_mismatch = get_custom_mistmatch_thresholds(df)
         except AssertionError as e:
-            logging.error(e, exc_info=True)
+            logging.error(e)
             logging.error(
                 f"Could not generate {manifest_type} manifest without index collisions. Skipping."
             )
