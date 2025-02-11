@@ -857,9 +857,9 @@ def write_demuxfile_aviti(process_stats, demux_id):
                             "% of thelane": float(
                                 row.get("PercentPoloniesAssigned", "0")
                             ),
-                            "% >= Q30bases": float(row.get("PercentQ30", "0")),
+                            "% >= Q30bases": float(row.get("PercentQ30", "0") or 0),
                             "Mean QualityScore": float(
-                                row.get("QualityScoreMean", "0")
+                                row.get("QualityScoreMean", "0") or 0
                             ),
                             "% Perfectbarcode": 100
                             - float(row.get("PercentMismatch", "0")),
