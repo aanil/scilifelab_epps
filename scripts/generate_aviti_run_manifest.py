@@ -292,6 +292,8 @@ def make_manifest(
     manifest_root_name: str,
     manifest_type: str,
 ) -> tuple[str, str | None]:
+    logging.info(f"Building {manifest_type} manifest...")
+
     # Get the index cycles from the step fields
     idx1_cycles = int(process.udf.get("Index Read 1"))
     idx2_cycles = int(process.udf.get("Index Read 2"))
