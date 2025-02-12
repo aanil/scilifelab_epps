@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250212.1
+
+In reads aggregation, do not warn for samples without demux artifacts if they are aborted.
+
 ## 20250205.1
 
 Introduce patch to reads aggregation EPP so opened steps don't have to be re-started from scratch.
