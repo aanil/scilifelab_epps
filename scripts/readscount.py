@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from datetime import datetime as dt
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
-from genologics.entities import Process
+from genologics.entities import Process, Sample
 from genologics.lims import Lims
 
 from scilifelab_epps.epp import attach_file
@@ -34,6 +34,21 @@ SEQUENCING_STEPS = [
     "ONT Start Sequencing v3.0",
     "AVITI Run v1.0",
 ]
+
+
+def sample_has_status(
+    sample: Sample,
+    status: str,
+    udfs_to_check: list[str] = ["Status (manual)"],
+) -> bool:
+    """Check the given status of a given sample by looking through a list of status UDFs.
+    Return true if the status is found in any of the UDFs, false otherwise.
+    """
+    assert status in ["In Progress", "Finished", "Aborted"]
+    for sample_udf_name in udfs_to_check:
+        if sample.udf.get(sample_udf_name) == status:
+            return True
+    return False
 
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
@@ -149,9 +164,14 @@ def sum_reads(sample, summary):
         name=f"{sample.name} (FASTQ reads)",
     )
     if not demux_arts:
-        logging.warning(
-            f"Could not find any demultiplexing artifacts for sample {sample.name}."
-        )
+        if sample_has_status(sample, "Aborted"):
+            logging.info(
+                f"Sample {sample.name} has no demux artifacts, but is set to 'Aborted'."
+            )
+        else:
+            logging.warning(
+                f"Could not find any demultiplexing artifacts for sample {sample.name}."
+            )
 
     # Check for any ongoing demux steps
     ongoing_demux_arts = []
