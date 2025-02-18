@@ -1,8 +1,12 @@
 # Scilifelab_epps Version Log
 
-## 20250206.1
+## 20250218.1
 
 Bugfix demux script by skipping outputs that do not contain the relevant sample name.
+
+## 20250212.1
+
+In reads aggregation, do not warn for samples without demux artifacts if they are aborted.
 
 ## 20250205.1
 
