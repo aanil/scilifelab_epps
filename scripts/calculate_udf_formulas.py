@@ -173,7 +173,7 @@ def eval_rh(
     """Evaluate the right-hand side of the formula, with placeholders replaced by values."""
     # Translate placeholders to values
     placeholder2val = {}
-    for placeholder in placeholders:
+    for placeholder in placeholders[1:]:  # First placeholder is the one to be assigned
         val = get_val_from_placeholder(placeholder, art_tuple, process)
         placeholder2val[placeholder] = val
 
@@ -182,11 +182,12 @@ def eval_rh(
     formula_eval_str_rh = formula_fstring_rh.format(*placeholder2val.values())
     rh_val = eval(formula_eval_str_rh)
 
-    # Print equation with populated values
+    # Print equations with placeholders and populated values
+    logging.info(formula_fstring.format(*placeholders))
     formula_eval_str_rh_2f = formula_fstring_rh.format(
         *[f"{i:.2f}" for i in placeholder2val.values()]
     )
-    logging.info(f"\t{rh_val:.2f} = {formula_eval_str_rh_2f}")
+    logging.info(f"{rh_val:.2f} = {formula_eval_str_rh_2f}")
 
     return rh_val
 
@@ -212,11 +213,10 @@ def main(args):
             logging.info(
                 f"Calculations for input-output '{art_in.name}' ({art_in.id}) --> '{art_out.name}' ({art_out.id})"
             )
-            logging.info(f"\t{formula}")
             try:
                 val = eval_rh(
                     formula_fstring,
-                    placeholders[1:],
+                    placeholders,
                     art_tuple,
                     process,
                 )
