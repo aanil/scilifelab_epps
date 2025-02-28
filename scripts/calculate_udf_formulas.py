@@ -125,6 +125,8 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
 
     Return the formula string with placeholders replaced by curly brackets,
     as well as a list of the placeholders.
+
+    Also perform various assertions to sanity check the input and prevent code injection.
     """
     logging.info(f"Parsing formula:\n\t{formula}")
 
@@ -148,7 +150,8 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
 
     # Sanity check matching number of UDF references and placeholders
     assert formula_fstring.count(r"{}") == len(placeholders), (
-        f"Number of extracted UDF references ({len(placeholders)}) do not match number of format placeholders ({formula_fstring.count(r'{}}')})"
+        f"Number of extracted UDF references ({len(placeholders)})"
+        + f"do not match number of format placeholders ({formula_fstring.count(r'{}}')})"
     )
 
     # Assert only pure math remains after removing allowed functions, strings and commas
@@ -241,8 +244,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--formula_field",
         type=str,
-        default="Calculations",
-        help="Which step UDF containing calculations",
+        default="UDF formulas",
+        help="Which step UDF containing UDF formulas",
     )
     args = parser.parse_args()
 
