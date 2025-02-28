@@ -79,6 +79,9 @@ def assign_val_to_placeholder(
     elif "step" in placeholder:
         obj = step
 
+    if type(val) is float:
+        val = round(val, 2)
+
     obj.udf[udf_name] = val
     obj.put()
 
