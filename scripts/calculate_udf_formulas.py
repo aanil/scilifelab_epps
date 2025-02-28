@@ -186,11 +186,11 @@ def eval_rh(
     rh_val = eval(formula_eval_str_rh)
 
     # Print equations with placeholders and populated values
-    logging.info(formula_fstring.format(*placeholders))
     formula_eval_str_rh_2f = formula_fstring_rh.format(
         *[f"{i:.2f}" for i in placeholder2val.values()]
     )
-    logging.info(f"{rh_val:.2f} = {formula_eval_str_rh_2f}")
+    logging.info(f"Formula:     {formula_fstring.format(*placeholders)}")
+    logging.info(f"Calculation: {rh_val:.2f} = {formula_eval_str_rh_2f}")
 
     return rh_val
 
