@@ -189,8 +189,8 @@ def eval_rh(
     formula_eval_str_rh_2f = formula_fstring_rh.format(
         *[f"{i:.2f}" for i in placeholder2val.values()]
     )
-    logging.info(f"Formula:     {formula_fstring.format(*placeholders)}")
-    logging.info(f"Calculation: {rh_val:.2f} = {formula_eval_str_rh_2f}")
+    logging.info(f"        Formula:  {formula_fstring.format(*placeholders)}")
+    logging.info(f"    Calculation:  {rh_val:.2f} = {formula_eval_str_rh_2f}")
 
     return rh_val
 
