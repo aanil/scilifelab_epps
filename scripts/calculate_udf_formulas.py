@@ -76,6 +76,7 @@ def assign_val_to_placeholder(
     art_in: Artifact | None = None,
     art_out: Artifact | None = None,
     step: Process | None = None,
+    overwrite=False,
 ) -> None:
     """Assign a value to a UDF placeholder."""
     udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
@@ -94,8 +95,14 @@ def assign_val_to_placeholder(
     if type(val) is float:
         val = round(val, 2)
 
-    obj.udf[udf_name] = val
-    obj.put()
+    if obj.udf.get(udf_name) and not overwrite:
+        logging.info(
+            f"UDF {placeholder} for {obj} already exists and overwrite is False, skipping."
+        )
+        raise SkipCalculation()
+    else:
+        obj.udf[udf_name] = val
+        obj.put()
 
 
 def get_val_from_placeholder(
@@ -143,7 +150,9 @@ def get_val_from_placeholder(
 class SkipCalculation(Exception):
     """Custom exception for skipping calculations."""
 
-    pass
+    def __init__(self, message="Skipping calculation"):
+        super().__init__(message)
+        logging.info(message)
 
 
 def parse_formula(formula: str) -> tuple[str, list[str]]:
@@ -262,7 +271,6 @@ def apply_formula(process, formula_fstring, placeholders):
                     val, placeholders[0], art_in, art_out, process
                 )
             except SkipCalculation as e:
-                logging.warning(f"Skipping calculation\n{e}")
                 continue
     else:
         logging.info("Step type: No-output")
@@ -277,7 +285,6 @@ def apply_formula(process, formula_fstring, placeholders):
                 )
                 assign_val_to_placeholder(val, placeholders[0], art_in, process)
             except SkipCalculation as e:
-                logging.warning(f"Skipping calculation\n{e}")
                 continue
 
 
