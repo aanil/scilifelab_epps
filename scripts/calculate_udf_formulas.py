@@ -18,61 +18,69 @@ from scilifelab_epps.utils.formula import (
 from scilifelab_epps.utils.udf_tools import fetch_last, get_art_tuples
 from scilifelab_epps.wrapper import epp_decorator
 
-DESC = """Script to perform UDF calculations on input-output level by reading
-equations with special syntax from a step UDF.
+DESC = """Script to perform UDF calculations on input-output level by reading equations
+with special syntax from a step UDF text field.
 
-The whole idea is to have a single calculation script whose behavior can be customized on a
-step-by-step basis in the front-end configuration.
+The whole idea is to have a single calculation script whose behavior can be customized
+on a step-by-step basis in the front-end configuration.
 
+The text field can contain multiple equations on one line each. Lines prefixed with '#'
+will be ignored as comments.
 
 Syntax explained:
 
     - UDF placeholders
 
-        A special string referencing a UDF in an artifact or step, and whether to fetch it recursively.
+        A special string referencing a UDF in an artifact or step, and whether to fetch
+        it recursively.
 
         E.g.
             inp['foo']      step input artifact UDF 'foo'
-            _outp['bar']    artifact UDF 'bar', fetched recursively from step output artifact
+            _outp['bar']    artifact UDF 'bar', fetched recursively from step output
+                            artifact
             step['mm']      step UDF 'mm'
 
     - Formulas
 
         A string containing an equation with UDF placeholders.
 
-        The left-hand side needs to be an isolated UDF placeholder, which is the one to be assigned,
-        and the right-hand side will be evaluated using eval() after replacing UDF placeholders with their corresponding values.
+        The left-hand side needs to be an isolated UDF placeholder, which is the one to
+        be assigned, and the right-hand side will be evaluated using eval() after
+        replacing UDF placeholders with their corresponding values.
 
-        The separator between the left and right hand side can be either '=' or '==', where the former will overwrite existing UDFs
-        and the latter will silently pass them. The latter case is useful for making sure multiple formulas do not overwrite one another,
-        i.e. the first calculation to write to the field will be the one to stick.
+        The separator between the left and right hand side can be either '=' or '==',
+        where the former will overwrite existing UDFs and the latter will silently pass
+        them. The latter case is useful for making sure multiple formulas do not
+        overwrite one another, i.e. the first calculation to write to the field will be
+        the one to stick.
 
-        Right-hand side placeholders that can't be resolved will result in skipping the calculation. The silent skipping allows us to
-        have multiple formulas targeting the same UDF that can be run in priority order without raising errors or warnings.
-
+        Right-hand side placeholders that can't be resolved will result in skipping the
+        calculation. The silent skipping allows us to have multiple formulas targeting
+        the same UDF that can be run in priority order without raising errors or
+        warnings.
 
 Examples:
 
-    1) Calculate the ng and fmol amount from a given concentration, volume and size of an output artifact.
+    1) Calculate the ng and fmol amount from a given concentration, volume and size of
+       an output artifact.
 
-        outp['Amount (ng)'] = ng_ul( outp['Concentration'], outp['Conc. Units'], outp['Size (bp)'] ) * outp['Volume (ul)']
-        outp['Amount (fmol)'] = ng_to_fmol( outp['Amount (ng)'], outp['Size (bp)'] )
+        outp['Amount (ng)'] = ng_ul(outp['Concentration'], outp['Conc. Units'], outp['Size (bp)']) * outp['Volume (ul)']
+        outp['Amount (fmol)'] = ng_to_fmol(outp['Amount (ng)'], outp['Size (bp)'])
 
-
-    2) Prioritized calculations! Populate three UDFs, based on the supplied value of one of them, in priority order.
+    2) Prioritized calculations! Populate three UDFs, based on the supplied value of one
+       of them, in priority order.
 
         # Calculate from 'Amount for prep (fmol)'
-        outp['Amount for prep (ng)'] == fmol_to_ng( outp['Amount for prep (fmol)'], _outp['Size (bp)'] )
-        outp['Volume to take (uL)'] == fmol_to_ng( outp['Amount for prep (fmol)'], _outp['Size (bp)'] ) / ng_ul( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
+        outp['Amount for prep (ng)'] == fmol_to_ng(outp['Amount for prep (fmol)'], _outp['Size (bp)'])
+        outp['Volume to take (uL)'] == fmol_to_ng(outp['Amount for prep (fmol)'], _outp['Size (bp)']) / ng_ul(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
 
         # Calculate from 'Amount for prep (ng)'
-        outp['Amount for prep (fmol)'] == ng_to_fmol( outp['Amount for prep (ng)'], _outp['Size (bp)'] )
-        outp['Volume to take (uL)'] == ng_to_fmol( outp['Amount for prep (ng)'], _outp['Size (bp)'] ) / nM( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
+        outp['Amount for prep (fmol)'] == ng_to_fmol(outp['Amount for prep (ng)'], _outp['Size (bp)'])
+        outp['Volume to take (uL)'] == ng_to_fmol(outp['Amount for prep (ng)'], _outp['Size (bp)']) / nM(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
 
         # Calculate from 'Volume to take (uL)'
-        outp['Amount for prep (fmol)'] == outp['Volume to take (uL)'] * nM( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
-        outp['Amount for prep (ng)'] == outp['Volume to take (uL)'] * ng_ul( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
-
+        outp['Amount for prep (fmol)'] == outp['Volume to take (uL)'] * nM(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
+        outp['Amount for prep (ng)'] == outp['Volume to take (uL)'] * ng_ul(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
 """
 
 TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
