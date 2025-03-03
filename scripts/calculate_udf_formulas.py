@@ -66,17 +66,24 @@ def nM(conc: float, conc_units: str, size: float) -> float:
 
 
 def assign_val_to_placeholder(
-    val: str | float, placeholder: str, art_tuple: tuple, step: Process
+    val: str | float,
+    placeholder: str,
+    art_in: Artifact | None = None,
+    art_out: Artifact | None = None,
+    step: Process | None = None,
 ) -> None:
     """Assign a value to a UDF placeholder for a given artifact tuple and step."""
     udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
 
     # Where to assign UDF
     if "inp" in placeholder:
-        obj = art_tuple[0]["uri"]
+        assert art_in, "Input artifact not provided"
+        obj = art_in
     elif "outp" in placeholder:
-        obj = art_tuple[1]["uri"]
+        assert art_out, "Output artifact not provided"
+        obj = art_out
     elif "step" in placeholder:
+        assert step, "Step not provided"
         obj = step
 
     if type(val) is float:
@@ -87,7 +94,10 @@ def assign_val_to_placeholder(
 
 
 def get_val_from_placeholder(
-    placeholder: str, art_tuple: tuple, step: Process
+    placeholder: str,
+    art_in: Artifact | None = None,
+    art_out: Artifact | None = None,
+    step: Process | None = None,
 ) -> str | float:
     """Fetch a value from a UDF placeholder for a given artifact tuple and step."""
     recursive = True if placeholder[0] == "_" else False
@@ -95,10 +105,13 @@ def get_val_from_placeholder(
 
     # Where to fetch UDF
     if "inp" in placeholder:
-        obj = art_tuple[0]["uri"]
+        assert art_in, "Input artifact not provided"
+        obj = art_in
     elif "outp" in placeholder:
-        obj = art_tuple[1]["uri"]
+        assert art_out, "Output artifact not provided"
+        obj = art_out
     elif "step" in placeholder:
+        assert step, "Step not provided"
         obj = step
 
     # How to fetch UDF
@@ -113,6 +126,11 @@ def get_val_from_placeholder(
     if val is None:
         logging.warning(f"Could not resolve UDF {placeholder} for {obj}")
         raise SkipCalculation()
+
+    # Returned values will pass through eval, so strings need
+    # to be escaped to not be interpreted as variables
+    if type(val) is str:
+        val = f"'{val}'"
 
     return val
 
@@ -171,13 +189,17 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
 
 
 def eval_rh(
-    formula_fstring: str, placeholders: list[str], art_tuple: tuple, process: Process
+    formula_fstring: str,
+    placeholders: list[str],
+    art_in: Artifact | None = None,
+    art_out: Artifact | None = None,
+    step: Process | None = None,
 ) -> str | float:
     """Evaluate the right-hand side of the formula, with placeholders replaced by values."""
     # Translate placeholders to values
     placeholder2val = {}
     for placeholder in placeholders[1:]:  # First placeholder is the one to be assigned
-        val = get_val_from_placeholder(placeholder, art_tuple, process)
+        val = get_val_from_placeholder(placeholder, art_in, art_out, step)
         placeholder2val[placeholder] = val
 
     # Evaluate right-hand side of equation
@@ -186,13 +208,61 @@ def eval_rh(
     rh_val = eval(formula_eval_str_rh)
 
     # Print equations with placeholders and populated values
-    formula_eval_str_rh_2f = formula_fstring_rh.format(
-        *[f"{i:.2f}" for i in placeholder2val.values()]
-    )
+    formatted_values = [
+        f"{i:.2f}" if type(i) in [float, int] else i for i in placeholder2val.values()
+    ]
+    formula_eval_str_rh_2f = formula_fstring_rh.format(*formatted_values)
     logging.info(f"        Formula:  {formula_fstring.format(*placeholders)}")
     logging.info(f"    Calculation:  {rh_val:.2f} = {formula_eval_str_rh_2f}")
 
     return rh_val
+
+
+def apply_formula(process, formula_fstring, placeholders):
+    """This function takes the parsed formula and applies it.
+
+    The application will differ depending on the type of step.
+    """
+    # Iterate across artifacts
+    # TODO resultsfile linkages
+    io_tuples = get_art_tuples(process)
+    if io_tuples:
+        logging.info("Step type: Standard input-ouput")
+        for art_tuple in get_art_tuples(process):
+            art_in = art_tuple[0]["uri"]
+            art_out = art_tuple[1]["uri"]
+            logging.info(
+                f"Calculations for input-output '{art_in.name}' ({art_in.id}) --> '{art_out.name}' ({art_out.id})"
+            )
+            try:
+                val = eval_rh(
+                    formula_fstring,
+                    placeholders,
+                    art_in=art_in,
+                    art_out=art_out,
+                    step=process,
+                )
+                assign_val_to_placeholder(
+                    val, placeholders[0], art_in, art_out, process
+                )
+            except SkipCalculation as e:
+                logging.warning(f"Skipping calculation\n{e}")
+                continue
+    else:
+        logging.info("Step type: No-output")
+        for art_in in [i for i in process.all_inputs() if i.type == "Analyte"]:
+            logging.info(f"Calculations for input '{art_in.name}' ({art_in.id})")
+            try:
+                val = eval_rh(
+                    formula_fstring,
+                    placeholders,
+                    art_in=art_in,
+                    step=process,
+                )
+                assign_val_to_placeholder(val, placeholders[0], art_in, process)
+            except SkipCalculation as e:
+                logging.warning(f"Skipping calculation\n{e}")
+                continue
 
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
@@ -207,26 +277,7 @@ def main(args):
 
     for formula in formulas:
         formula_fstring, placeholders = parse_formula(formula)
-
-        # Iterate across artifacts
-        # TODO check for no-output steps and resultsfile linkages
-        for art_tuple in get_art_tuples(process):
-            art_in = art_tuple[0]["uri"]
-            art_out = art_tuple[1]["uri"]
-            logging.info(
-                f"Calculations for input-output '{art_in.name}' ({art_in.id}) --> '{art_out.name}' ({art_out.id})"
-            )
-            try:
-                val = eval_rh(
-                    formula_fstring,
-                    placeholders,
-                    art_tuple,
-                    process,
-                )
-                assign_val_to_placeholder(val, placeholders[0], art_tuple, process)
-            except SkipCalculation as e:
-                logging.warning(f"Skipping calculation\n{e}")
-                continue
+        apply_formula(process, formula_fstring, placeholders)
 
 
 if __name__ == "__main__":
