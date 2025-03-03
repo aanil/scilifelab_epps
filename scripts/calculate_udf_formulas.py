@@ -45,21 +45,23 @@ Syntax examples:
 TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
 
 
-def ng_ul(conc: float, conc_units: str, size: float) -> float:
+def ng_ul(conc: float, conc_units: str, size: float | None = None) -> float:
     """Force a concentration to be in ng/ul."""
     if conc_units == "ng/ul":
         return conc
     elif conc_units == "nM":
+        assert size, "Size not provided for conversion to ng"
         return nM_to_ng_ul(conc, size)
     else:
         raise AssertionError(f"Concentration units '{conc_units}' not recognized")
 
 
-def nM(conc: float, conc_units: str, size: float) -> float:
+def nM(conc: float, conc_units: str, size: float | None = None) -> float:
     """Force a concentration to be in nM."""
     if conc_units == "nM":
         return conc
     elif conc_units == "ng/ul":
+        assert size, "Size not provided for conversion to nM"
         return ng_ul_to_nM(conc, size)
     else:
         raise AssertionError(f"Concentration units '{conc_units}' not recognized")
