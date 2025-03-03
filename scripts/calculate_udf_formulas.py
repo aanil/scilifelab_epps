@@ -281,16 +281,29 @@ def apply_formula(process, formula_fstring, placeholders):
                 continue
 
 
+def get_formulas(step, formula_field):
+    """Extract formulas from a step UDF text field. Skip empty lines and comments."""
+    formula_field_contents = step.udf.get(formula_field)
+    assert formula_field_contents, f"Step UDF '{formula_field}' is empty"
+    rows = formula_field_contents.split("\n")
+
+    formulas = []
+    for row in rows:
+        if row == "":
+            continue
+        if row[0] == "#":
+            continue
+        formulas.append(row)
+
+    return formulas
+
+
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
 def main(args):
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
 
-    # Read field containing formulas
-    formula_field_contents = process.udf.get(args.formula_field)
-    assert formula_field_contents, f"Step UDF '{args.formula_field}' is empty"
-    formulas = formula_field_contents.split("\n")
-
+    formulas = get_formulas(process, args.formula_field)
     for formula in formulas:
         formula_fstring, placeholders = parse_formula(formula)
         apply_formula(process, formula_fstring, placeholders)
