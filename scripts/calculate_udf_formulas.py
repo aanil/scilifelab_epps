@@ -211,15 +211,15 @@ def eval_rh(
     step: Process | None = None,
 ) -> str | float:
     """Evaluate the right-hand side of the formula, with placeholders replaced by values."""
-    # Translate placeholders to values
-    placeholder2val = {}
-    for placeholder in placeholders[1:]:  # First placeholder is the one to be assigned
+    # Translate placeholders to values and collect them as tuples
+    placeholder2val = []
+    for placeholder in placeholders[1:]:  # First placeholder to be assigned, not read
         val = get_val_from_placeholder(placeholder, art_in, art_out, step)
-        placeholder2val[placeholder] = val
+        placeholder2val.append((placeholder, val))
 
     # Evaluate right-hand side of equation
     formula_fstring_rh = formula_fstring.split("=")[1].strip()
-    formula_eval_str_rh = formula_fstring_rh.format(*placeholder2val.values())
+    formula_eval_str_rh = formula_fstring_rh.format(*[i[1] for i in placeholder2val])
     rh_val = eval(formula_eval_str_rh)
 
     # Print equations with placeholders and populated values
