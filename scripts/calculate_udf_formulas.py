@@ -10,6 +10,8 @@ from genologics.entities import Artifact, Process
 from genologics.lims import Lims
 
 from scilifelab_epps.utils.formula import (
+    fmol_to_ng,
+    ng_to_fmol,
     ng_ul_to_nM,
     nM_to_ng_ul,
 )
@@ -154,12 +156,22 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
     logging.info(f"Parsing formula:\n\t{formula}")
 
     # Explicate non-placeholders allowed in formula, to prevent code injection
-    allowed_functions = ["ng_ul", "nM"]
-    allowed_strings = ["'ng/ul'", "'nM'"]
+    allowed_functions = [
+        ng_ul,
+        nM,
+        fmol_to_ng,
+        ng_to_fmol,
+        ng_ul_to_nM,
+        nM_to_ng_ul,
+    ]
+    allowed_strings = [
+        "'ng/ul'",
+        "'nM'",
+    ]
 
     # Patterns
     placeholder_pattern = r"_?((inp)|(outp)|(step))\[.*?\]"
-    allowed_functions_pattern = "|".join([f"({f})" for f in allowed_functions])
+    allowed_functions_pattern = "|".join([f"({f.__name__})" for f in allowed_functions])
     allowed_strings_pattern = "|".join([f"({s})" for s in allowed_strings])
     pure_math_pattern = r"[=\d\+\-\*\/\(\)\{\}\s]+"
 
