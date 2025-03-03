@@ -211,26 +211,26 @@ def eval_rh(
     step: Process | None = None,
 ) -> str | float:
     """Evaluate the right-hand side of the formula, with placeholders replaced by values."""
-    # Translate placeholders to values and collect them as tuples
-    placeholder2val = []
+    # Translate right-hand placeholders to values
+    rh_values = []
     for placeholder in placeholders[1:]:  # First placeholder to be assigned, not read
-        val = get_val_from_placeholder(placeholder, art_in, art_out, step)
-        placeholder2val.append((placeholder, val))
+        rh_val = get_val_from_placeholder(placeholder, art_in, art_out, step)
+        rh_values.append(rh_val)
 
     # Evaluate right-hand side of equation
     formula_fstring_rh = formula_fstring.split("=")[1].strip()
-    formula_eval_str_rh = formula_fstring_rh.format(*[i[1] for i in placeholder2val])
-    rh_val = eval(formula_eval_str_rh)
+    formula_eval_str_rh = formula_fstring_rh.format(*rh_values)
+
+    # Solve for x :)
+    lh_val = eval(formula_eval_str_rh)
 
     # Print equations with placeholders and populated values
-    formatted_values = [
-        f"{i:.2f}" if type(i) in [float, int] else i for i in placeholder2val.values()
-    ]
-    formula_eval_str_rh_2f = formula_fstring_rh.format(*formatted_values)
+    rh_values_2f = [f"{i:.2f}" if type(i) in [float, int] else i for i in rh_values]
+    formula_fstring_rh_2f = formula_fstring_rh.format(*rh_values_2f)
     logging.info(f"        Formula:  {formula_fstring.format(*placeholders)}")
-    logging.info(f"    Calculation:  {rh_val:.2f} = {formula_eval_str_rh_2f}")
+    logging.info(f"    Calculation:  {rh_val:.2f} = {formula_fstring_rh_2f}")
 
-    return rh_val
+    return lh_val
 
 
 def apply_formula(process, formula_fstring, placeholders):
