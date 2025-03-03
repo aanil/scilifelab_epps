@@ -72,7 +72,7 @@ def assign_val_to_placeholder(
     art_out: Artifact | None = None,
     step: Process | None = None,
 ) -> None:
-    """Assign a value to a UDF placeholder for a given artifact tuple and step."""
+    """Assign a value to a UDF placeholder."""
     udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
 
     # Where to assign UDF
@@ -99,7 +99,7 @@ def get_val_from_placeholder(
     art_out: Artifact | None = None,
     step: Process | None = None,
 ) -> str | float:
-    """Fetch a value from a UDF placeholder for a given artifact tuple and step."""
+    """Fetch a value from a UDF placeholder."""
     recursive = True if placeholder[0] == "_" else False
     udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
 
