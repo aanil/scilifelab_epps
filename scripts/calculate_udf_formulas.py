@@ -270,7 +270,7 @@ def apply_formula(process, formula_fstring, placeholders):
                 assign_val_to_placeholder(
                     val, placeholders[0], art_in, art_out, process
                 )
-            except SkipCalculation as e:
+            except SkipCalculation:
                 continue
     else:
         logging.info("Step type: No-output")
@@ -284,7 +284,7 @@ def apply_formula(process, formula_fstring, placeholders):
                     step=process,
                 )
                 assign_val_to_placeholder(val, placeholders[0], art_in, process)
-            except SkipCalculation as e:
+            except SkipCalculation:
                 continue
 
 
