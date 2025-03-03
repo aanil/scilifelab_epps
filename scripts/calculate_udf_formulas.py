@@ -39,8 +39,9 @@ Syntax examples:
     which is the one to be assigned, and the right hand side will be evaluated after translating UDF placeholders
     into their corresponding values.
 
-    E.g.
-        outp['Eluted Amount (fmol)'] = nM(outp['Eluted Concentration (ng/ul)'], 'ng/ul', _outp['Size (bp)']) * outp['Eluted Volume (ul)']
+    E.g. to calculate the ng and fmol amount from a given concentration, volume and size of an output artifact:
+        outp['Amount (ng)'] = ng_ul( outp['Concentration'], outp['Conc. Units'], outp['Size (bp)'] ) * outp['Volume (ul)']
+        outp['Amount (fmol)'] = ng_to_fmol( outp['Amount (ng)'], outp['Size (bp)'] )
 
 """
 
