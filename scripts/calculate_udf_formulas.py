@@ -278,7 +278,6 @@ def main(args):
 
     for formula in formulas:
         formula_fstring, placeholders = parse_formula(formula)
-        process = Process(lims, id=args.pid)  # Reload process to avoid stale data
         apply_formula(process, formula_fstring, placeholders)
 
 
