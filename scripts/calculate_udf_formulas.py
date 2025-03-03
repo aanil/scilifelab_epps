@@ -30,8 +30,8 @@ Syntax examples:
     A special string referencing a UDF in an artifact or step, and whether to fetch it recursively.
 
     E.g.
-        in['foo']      step input artifact UDF 'foo'
-        _out['bar']    artifact UDF 'bar', fetched recursively from step output artifact
+        inp['foo']      step input artifact UDF 'foo'
+        _outp['bar']    artifact UDF 'bar', fetched recursively from step output artifact
         step['mm']     step UDF 'mm'
 
 - Formulas
