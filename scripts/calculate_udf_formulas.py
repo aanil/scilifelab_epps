@@ -19,29 +19,59 @@ from scilifelab_epps.utils.udf_tools import fetch_last, get_art_tuples
 from scilifelab_epps.wrapper import epp_decorator
 
 DESC = """Script to perform UDF calculations on input-output level by reading
-equations with special syntax UDF placeholders from a step UDF.
+equations with special syntax from a step UDF.
 
 The whole idea is to have a single calculation script whose behavior can be customized on a
 step-by-step basis in the front-end configuration.
 
-Syntax examples:
 
-- UDF placeholders
-    A special string referencing a UDF in an artifact or step, and whether to fetch it recursively.
+Syntax explained:
 
-    E.g.
-        inp['foo']      step input artifact UDF 'foo'
-        _outp['bar']    artifact UDF 'bar', fetched recursively from step output artifact
-        step['mm']     step UDF 'mm'
+    - UDF placeholders
 
-- Formulas
-    A string containing an equation with UDF placeholders. The left hand side needs to be an isolated UDF placeholder,
-    which is the one to be assigned, and the right hand side will be evaluated after translating UDF placeholders
-    into their corresponding values.
+        A special string referencing a UDF in an artifact or step, and whether to fetch it recursively.
 
-    E.g. to calculate the ng and fmol amount from a given concentration, volume and size of an output artifact:
+        E.g.
+            inp['foo']      step input artifact UDF 'foo'
+            _outp['bar']    artifact UDF 'bar', fetched recursively from step output artifact
+            step['mm']      step UDF 'mm'
+
+    - Formulas
+
+        A string containing an equation with UDF placeholders.
+
+        The left-hand side needs to be an isolated UDF placeholder, which is the one to be assigned,
+        and the right-hand side will be evaluated using eval() after replacing UDF placeholders with their corresponding values.
+
+        The separator between the left and right hand side can be either '=' or '==', where the former will overwrite existing UDFs
+        and the latter will silently pass them. The latter case is useful for making sure multiple formulas do not overwrite one another,
+        i.e. the first calculation to write to the field will be the one to stick.
+
+        Right-hand side placeholders that can't be resolved will result in skipping the calculation. The silent skipping allows us to
+        have multiple formulas targeting the same UDF that can be run in priority order without raising errors or warnings.
+
+
+Examples:
+
+    1) Calculate the ng and fmol amount from a given concentration, volume and size of an output artifact.
+
         outp['Amount (ng)'] = ng_ul( outp['Concentration'], outp['Conc. Units'], outp['Size (bp)'] ) * outp['Volume (ul)']
         outp['Amount (fmol)'] = ng_to_fmol( outp['Amount (ng)'], outp['Size (bp)'] )
+
+
+    2) Prioritized calculations! Populate three UDFs, based on the supplied value of one of them, in priority order.
+
+        # Calculate from 'Amount for prep (fmol)'
+        outp['Amount for prep (ng)'] == fmol_to_ng( outp['Amount for prep (fmol)'], _outp['Size (bp)'] )
+        outp['Volume to take (uL)'] == fmol_to_ng( outp['Amount for prep (fmol)'], _outp['Size (bp)'] ) / ng_ul( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
+
+        # Calculate from 'Amount for prep (ng)'
+        outp['Amount for prep (fmol)'] == ng_to_fmol( outp['Amount for prep (ng)'], _outp['Size (bp)'] )
+        outp['Volume to take (uL)'] == ng_to_fmol( outp['Amount for prep (ng)'], _outp['Size (bp)'] ) / nM( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
+
+        # Calculate from 'Volume to take (uL)'
+        outp['Amount for prep (fmol)'] == outp['Volume to take (uL)'] * nM( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
+        outp['Amount for prep (ng)'] == outp['Volume to take (uL)'] * ng_ul( inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'] )
 
 """
 
@@ -76,7 +106,7 @@ def assign_val_to_placeholder(
     art_in: Artifact | None = None,
     art_out: Artifact | None = None,
     step: Process | None = None,
-    overwrite=False,
+    overwrite: bool = True,
 ) -> None:
     """Assign a value to a UDF placeholder."""
     udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
@@ -227,7 +257,8 @@ def eval_rh(
         rh_values.append(rh_val)
 
     # Evaluate right-hand side of equation
-    formula_fstring_rh = formula_fstring.split("=")[1].strip()
+    sep = "==" if "==" in formula_fstring else "="
+    formula_fstring_rh = formula_fstring.split(sep)[1].strip()
     formula_eval_str_rh = formula_fstring_rh.format(*rh_values)
 
     # Solve for x :)
@@ -247,6 +278,8 @@ def apply_formula(process, formula_fstring, placeholders):
 
     The application will differ depending on the type of step.
     """
+
+    overwrite = False if "==" in formula_fstring else True
 
     # Iterate across artifacts
     # TODO resultsfile linkages
@@ -268,7 +301,7 @@ def apply_formula(process, formula_fstring, placeholders):
                     step=process,
                 )
                 assign_val_to_placeholder(
-                    val, placeholders[0], art_in, art_out, process
+                    val, placeholders[0], art_in, art_out, process, overwrite
                 )
             except SkipCalculation:
                 continue
@@ -283,7 +316,9 @@ def apply_formula(process, formula_fstring, placeholders):
                     art_in=art_in,
                     step=process,
                 )
-                assign_val_to_placeholder(val, placeholders[0], art_in, process)
+                assign_val_to_placeholder(
+                    val, placeholders[0], art_in, process, overwrite
+                )
             except SkipCalculation:
                 continue
 
