@@ -85,6 +85,8 @@ Examples:
 
 TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
 
+exit
+
 
 def ng_ul(conc: float, conc_units: str, size: float | None = None) -> float:
     """Force a concentration to be in ng/ul."""
@@ -276,7 +278,7 @@ def eval_rh(
     rh_values_2f = [f"{i:.2f}" if type(i) in [float, int] else i for i in rh_values]
     formula_fstring_rh_2f = formula_fstring_rh.format(*rh_values_2f)
     logging.info(f"        Formula:  {formula_fstring.format(*placeholders)}")
-    logging.info(f"    Calculation:  {rh_val:.2f} = {formula_fstring_rh_2f}")
+    logging.info(f"    Calculation:  {lh_val:.2f} = {formula_fstring_rh_2f}")
 
     return lh_val
 
