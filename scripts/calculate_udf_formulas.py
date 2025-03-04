@@ -288,12 +288,12 @@ def eval_rh(
     # Solve for x :)
     try:
         lh_val = eval(formula_eval_str_rh)
-        assert type(lh_val) in [float, int, str], (
-            f"Evaluated formula '{formula_fstring_rh}' did not return a valid value"
-        )
     except Exception as e:
-        logging.error(f"Could not evaluate formula: {formula_fstring_rh}")
+        logging.error(f"Could not evaluate formula: {formula_eval_str_rh}")
         raise e
+    assert type(lh_val) in [float, int, str], (
+        f"Evaluated formula '{formula_eval_str_rh}' did not return a valid value"
+    )
 
     # Print equations with placeholders and populated values
     rh_values_2f = [f"{i:.2f}" if type(i) in [float, int] else i for i in rh_values]
