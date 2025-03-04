@@ -10,7 +10,7 @@ def ng_to_fmol(ng, bp):
     Formula based on NEBioCalculator
     https://nebiocalculator.neb.com/#!/dsdnaamt
     """
-    return 10**6 * ng / (bp * 617.96 + 36.04)
+    return 10**6 * ng / (bp * 615.96 + 36.04)
 
 
 def ng_ul_to_nM(ng_ul, bp):
@@ -23,7 +23,7 @@ def fmol_to_ng(fmol, bp):
     Formula based on NEBioCalculator
     https://nebiocalculator.neb.com/#!/dsdnaamt
     """
-    return fmol * (bp * 617.96 + 36.04) / 10**6
+    return fmol * (bp * 615.96 + 36.04) / 10**6
 
 
 def nM_to_ng_ul(nM, bp):
