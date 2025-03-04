@@ -289,10 +289,10 @@ def eval_rh(
     try:
         lh_val = eval(formula_eval_str_rh)
     except Exception as e:
-        logging.error(f"Could not evaluate formula: {formula_eval_str_rh}")
+        logging.error(f'Could not evaluate: "{formula_eval_str_rh}"')
         raise e
     assert type(lh_val) in [float, int, str], (
-        f"Evaluated formula '{formula_eval_str_rh}' did not return a valid value"
+        f'Evaluation of "{formula_eval_str_rh}" gave invalid output: "{lh_val}" of type "{type(lh_val)}"'
     )
 
     # Print equations with placeholders and populated values
