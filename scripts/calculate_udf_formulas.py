@@ -293,8 +293,7 @@ def eval_rh(
         )
     except Exception as e:
         logging.error(f"Could not evaluate formula: {formula_fstring_rh}")
-        logging.error(f"Error: {e}")
-        raise AssertionError(f"Could not evaluate formula: {formula_fstring_rh}")
+        raise e
 
     # Print equations with placeholders and populated values
     rh_values_2f = [f"{i:.2f}" if type(i) in [float, int] else i for i in rh_values]
