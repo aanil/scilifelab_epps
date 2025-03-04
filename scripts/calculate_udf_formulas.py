@@ -223,7 +223,7 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
     placeholder_pattern = r"_?((inp)|(outp)|(step))\[.*?\]"
     allowed_functions_pattern = "|".join([f"({f.__name__})" for f in allowed_functions])
     allowed_strings_pattern = "|".join([f"({s})" for s in allowed_strings])
-    pure_math_pattern = r"[=\d\+\-\*\/\(\)\{\}\s]+"
+    pure_math_pattern = r"[=\d,\+\-\*\/\(\)\{\}\s]+"
 
     # Collect UDF references from formula
     placeholders: list[str] = [
@@ -239,14 +239,17 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
         + f"do not match number of format placeholders ({formula_fstring.count(r'{}}')})"
     )
 
-    # Assert only pure math remains after removing allowed functions, strings and commas
-    formula_pure = formula_fstring
-    formula_pure = re.sub(allowed_functions_pattern, "", formula_pure)
-    formula_pure = re.sub(allowed_strings_pattern, "", formula_pure)
-    formula_pure = re.sub(r",", "", formula_pure)
+    # Strip down formula pattern by pattern, to see if any disallowed content remains
+    # This is to prevent code injection
+    formula_stripped = formula_fstring
+    formula_stripped = re.sub(allowed_functions_pattern, "", formula_stripped)
+    formula_stripped = re.sub(allowed_strings_pattern, "", formula_stripped)
+    formula_stripped = re.sub(pure_math_pattern, "", formula_stripped)
 
-    assert re.fullmatch(pure_math_pattern, formula_pure), (
-        f"Formula '{formula}' appears to contain disallowed characters."
+    # Assert contents are empty after stripping
+    # If not raise the remainins for troubleshooting
+    assert formula_stripped == "", (
+        f"Formula '{formula}' appears to contain disallowed characters: '{formula_stripped}'"
     )
 
     return formula_fstring, placeholders
