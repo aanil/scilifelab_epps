@@ -119,7 +119,12 @@ def assign_val_to_placeholder(
     overwrite: bool = True,
 ) -> None:
     """Assign a value to a UDF placeholder."""
-    udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
+    try:
+        udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
+    except (AttributeError, IndexError):
+        raise AssertionError(
+            f"Could not extract UDF name from placeholder '{placeholder}'"
+        )
 
     # Where to assign UDF
     if "inp" in placeholder:
@@ -153,7 +158,13 @@ def get_val_from_placeholder(
 ) -> str | float:
     """Fetch a value from a UDF placeholder."""
     recursive = True if placeholder[0] == "_" else False
-    udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
+
+    try:
+        udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
+    except (AttributeError, IndexError):
+        raise AssertionError(
+            f"Could not extract UDF name from placeholder '{placeholder}'"
+        )
 
     # Where to fetch UDF
     if "inp" in placeholder:
