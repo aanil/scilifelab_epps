@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250304.1
+
+Update formulas to match updated [NEB calc tool](https://nebiocalculator.neb.com/#!/dsdnaamt), assuming deprotonated phosphate hydroxyls.
+
 ## 20250218.1
 
 Bugfix demux script by skipping outputs that do not contain the relevant sample name.
