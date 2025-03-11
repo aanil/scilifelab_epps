@@ -142,7 +142,7 @@ def assign_val_to_placeholder(
 
     if obj.udf.get(udf_name) and not overwrite:
         logging.info(
-            f"UDF {placeholder} for {obj} already exists and overwrite is False, skipping."
+            f"UDF {placeholder} already exists and overwrite is False, skipping."
         )
         raise SkipCalculation()
     else:
@@ -170,12 +170,15 @@ def get_val_from_placeholder(
     if "inp" in placeholder:
         assert art_in, "Input artifact not provided"
         obj = art_in
+        obj_type = "input artifact"
     elif "outp" in placeholder:
         assert art_out, "Output artifact not provided"
         obj = art_out
+        obj_type = "output artifact"
     elif "step" in placeholder:
         assert step, "Step not provided"
         obj = step
+        obj_type = "step"
 
     # How to fetch UDF
     if recursive:
@@ -188,7 +191,7 @@ def get_val_from_placeholder(
 
     if val is None:
         logging.info(
-            f"Could not resolve UDF {placeholder} for '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
+            f"Could not resolve UDF {placeholder} for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
         )
         raise SkipCalculation()
 
