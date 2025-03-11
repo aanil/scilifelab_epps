@@ -187,7 +187,9 @@ def get_val_from_placeholder(
         val = obj.udf.get(udf_name)
 
     if val is None:
-        logging.info(f"Could not resolve UDF {placeholder} for {obj}")
+        logging.info(
+            f"Could not resolve UDF {placeholder} for '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
+        )
         raise SkipCalculation()
 
     # Returned values will pass through eval, so strings need
