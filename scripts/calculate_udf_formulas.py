@@ -191,7 +191,7 @@ def get_val_from_placeholder(
 
     if val is None:
         logging.info(
-            f"Could not resolve UDF {placeholder} for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
+            f"Could not resolve UDF '{udf_name}' for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
         )
         raise SkipCalculation()
 
