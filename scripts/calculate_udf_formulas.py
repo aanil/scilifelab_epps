@@ -85,8 +85,6 @@ Examples:
 
 TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
 
-exit
-
 
 def ng_ul(conc: float, conc_units: str, size: float | None = None) -> float:
     """Force a concentration to be in ng/ul."""
@@ -361,9 +359,15 @@ def apply_formula(process, formula_fstring, placeholders):
 
 def get_formulas(step, formula_field):
     """Extract formulas from a step UDF text field. Skip empty lines and comments."""
-    formula_field_contents = step.udf.get(formula_field)
-    assert formula_field_contents, f"Step UDF '{formula_field}' is empty"
-    rows = formula_field_contents.split("\n")
+
+    udf_names = [udf[0] for udf in step.udf.items()]
+    formula_field_contents = [
+        step.udf.get(udf_name) for udf_name in udf_names if formula_field in udf_name
+    ]
+    assert len(formula_field_contents) == 1, (
+        f"Searching for '{formula_field}' in step UDFs gave {len(formula_field_contents)} matches."
+    )
+    rows = formula_field_contents[0].split("\n")
 
     formulas = []
     for row in rows:
@@ -406,7 +410,7 @@ if __name__ == "__main__":
         "--formula_field",
         type=str,
         default="UDF formulas",
-        help="Which step UDF containing UDF formulas",
+        help="String to identify the step field containing formulas",
     )
     args = parser.parse_args()
 
