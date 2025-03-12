@@ -285,24 +285,27 @@ def eval_rh(
 
     # Evaluate right-hand side of equation
     sep = "==" if "==" in formula_fstring else "="
-    formula_fstring_rh = formula_fstring.split(sep)[1].strip()
-    formula_eval_str_rh = formula_fstring_rh.format(*rh_values)
+    rh_fstring = formula_fstring.split(sep)[1].strip()
+    rh_eval_string = rh_fstring.format(*rh_values)
 
     # Solve for x :)
     try:
-        lh_val = eval(formula_eval_str_rh)
+        lh_val = eval(rh_eval_string)
     except Exception as e:
-        logging.error(f'Could not evaluate: "{formula_eval_str_rh}"')
+        logging.error(f'Could not evaluate: "{rh_eval_string}"')
         raise e
     assert type(lh_val) in [float, int, str], (
-        f'Evaluation of "{formula_eval_str_rh}" gave invalid output: "{lh_val}" of type "{type(lh_val)}"'
+        f'Evaluation of "{rh_eval_string}" gave invalid output: "{lh_val}" of type "{type(lh_val)}"'
     )
 
+    values = [lh_val] + rh_values
+    values_2f = [
+        f"{value:.2f}" if isinstance(value, float) else value for value in values
+    ]
+
     # Print equations with placeholders and populated values
-    rh_values_2f = [f"{i:.2f}" if type(i) in [float, int] else i for i in rh_values]
-    formula_fstring_rh_2f = formula_fstring_rh.format(*rh_values_2f)
     logging.info(f"        Formula:  {formula_fstring.format(*placeholders)}")
-    logging.info(f"    Calculation:  {lh_val:.2f} = {formula_fstring_rh_2f}")
+    logging.info(f"    Calculation:  {formula_fstring.format(*values_2f)}")
 
     return lh_val
 
