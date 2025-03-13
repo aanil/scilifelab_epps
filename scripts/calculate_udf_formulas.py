@@ -217,7 +217,7 @@ def get_val_from_placeholder(
     if type(val) is str:
         val = f"'{val}'"
 
-    logging.info(f"Resolved '{placeholder}' UDF '{udf_name}' to {val}")
+    logging.info(f"Resolved {placeholder} UDF '{udf_name}' to {val}")
 
     return val
 
@@ -331,7 +331,9 @@ def eval_rh(
     return lh_val
 
 
-def apply_formula(process, formula_fstring, placeholders):
+def apply_formula(
+    process: Process, step_type: str, formula_fstring: str, placeholders: list[str]
+) -> None:
     """This function takes the parsed formula and applies it.
 
     The application will differ depending on the type of step.
@@ -340,10 +342,7 @@ def apply_formula(process, formula_fstring, placeholders):
     overwrite = False if "==" in formula_fstring else True
 
     # Iterate across artifacts
-    # TODO resultsfile linkages
-    io_tuples = get_art_tuples(process)
-    if io_tuples:
-        logging.info("Step type: Standard input-output")
+    if step_type in ["Standard", "Add Labels"]:
         for art_tuple in get_art_tuples(process):
             art_in = art_tuple[0]["uri"]
             art_out = art_tuple[1]["uri"]
@@ -363,7 +362,7 @@ def apply_formula(process, formula_fstring, placeholders):
                 )
             except SkipCalculation:
                 continue
-    else:
+    elif step_type == "No Outputs":
         logging.info("Step type: No-output")
         for art_in in [i for i in process.all_inputs() if i.type == "Analyte"]:
             logging.info(f"Calculations for input '{art_in.name}' ({art_in.id})")
@@ -379,6 +378,8 @@ def apply_formula(process, formula_fstring, placeholders):
                 )
             except SkipCalculation:
                 continue
+    else:
+        raise NotImplementedError(f"Step type '{step_type}' not implemented")
 
 
 def get_formulas(step, formula_field):
@@ -404,15 +405,42 @@ def get_formulas(step, formula_field):
     return formulas
 
 
+def get_step_type(process: Process) -> str:
+    """Determine the type of step, based on the number of outputs."""
+
+    ## Step type IDs
+    # Standard / No Outputs  24-XXXXXX
+    # Add Labels             151-XXXXXX
+    # Pooling                122-XXXXXX
+
+    step_prefix = process.id.split("-")[0]
+
+    if step_prefix == "24":
+        # This function should return None for 'No Outputs'-steps
+        if get_art_tuples(process):
+            step_type = "Standard"
+        else:
+            step_type = "No Outputs"
+    elif step_prefix == "151":
+        step_type = "Add Labels"
+    else:
+        raise AssertionError(f"Step prefix '{step_prefix}' not recognized")
+
+    logging.info(f"Step type: {step_type}")
+    return step_type
+
+
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
 def main(args):
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
 
+    step_type = get_step_type(process)
+
     formulas = get_formulas(process, args.formula_field)
     for formula in formulas:
         formula_fstring, placeholders = parse_formula(formula)
-        apply_formula(process, formula_fstring, placeholders)
+        apply_formula(process, step_type, formula_fstring, placeholders)
 
 
 if __name__ == "__main__":
