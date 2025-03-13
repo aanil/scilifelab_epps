@@ -203,7 +203,7 @@ def get_val_from_placeholder(
             logging.info(
                 f"Could not resolve UDF '{udf_name}' for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
             )
-            if i < len(udf_names):
+            if i + 1 < len(udf_names):
                 logging.info(f"Trying next UDF '{udf_names[i + 1]}'")
                 continue
             else:
