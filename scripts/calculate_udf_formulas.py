@@ -217,6 +217,8 @@ def get_val_from_placeholder(
     if type(val) is str:
         val = f"'{val}'"
 
+    logging.info(f"Resolved '{placeholder}' UDF '{udf_name}' to {val}")
+
     return val
 
 
@@ -341,7 +343,7 @@ def apply_formula(process, formula_fstring, placeholders):
     # TODO resultsfile linkages
     io_tuples = get_art_tuples(process)
     if io_tuples:
-        logging.info("Step type: Standard input-ouput")
+        logging.info("Step type: Standard input-output")
         for art_tuple in get_art_tuples(process):
             art_in = art_tuple[0]["uri"]
             art_out = art_tuple[1]["uri"]
