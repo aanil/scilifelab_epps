@@ -31,14 +31,14 @@ Syntax explained:
 
     - UDF placeholders
 
-        A special string referencing a UDF in an artifact or step, and whether to fetch
-        it recursively.
+        A special string referencing a UDF name in an artifact or step, and whether to fetch
+        it recursively. Can also be supplied as a prioritized list of UDF names.
 
         E.g.
             inp['foo']      step input artifact UDF 'foo'
             _outp['bar']    artifact UDF 'bar', fetched recursively from step output
                             artifact
-            step['mm']      step UDF 'mm'
+            step['A', 'B']  step UDF 'A', or 'B' if 'A' is not found
 
     - Formulas
 
@@ -67,6 +67,7 @@ Examples:
         outp['Amount (ng)'] = ng_ul(outp['Concentration'], outp['Conc. Units'], outp['Size (bp)']) * outp['Volume (ul)']
         outp['Amount (fmol)'] = ng_to_fmol(outp['Amount (ng)'], outp['Size (bp)'])
 
+
     2) Prioritized calculations! Populate three UDFs, based on the supplied value of one
        of them, in priority order.
 
@@ -81,6 +82,18 @@ Examples:
         # Calculate from 'Volume to take (uL)'
         outp['Amount for prep (fmol)'] == outp['Volume to take (uL)'] * nM(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
         outp['Amount for prep (ng)'] == outp['Volume to take (uL)'] * ng_ul(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
+
+
+    3) Prioritized UDFs! Fields signifying the same thing in the calculation may be called
+       different things depending on parent step.
+
+        # Calculate amounts from input amounts by volume fraction
+        outp['Amount (ng)'] = ( outp['Volume to take (uL)'] / inp['Volume (ul)', 'Total Volume (uL)'] ) * inp['Amount (ng)', 'Amount for prep (ng)']
+        outp['Amount (fmol)'] = ( outp['Volume to take (uL)'] / inp['Volume (ul)', 'Total Volume (uL)'] ) * inp['Amount (fmol)', 'Amount for prep (fmol)']
+
+        # Calculate new conc. from new volume
+        outp['Concentration'] = outp['Amount (ng)'] / outp['Volume (ul)']
+        outp['Conc. Units'] = 'ng/ul'
 """
 
 TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
@@ -157,12 +170,9 @@ def get_val_from_placeholder(
     """Fetch a value from a UDF placeholder."""
     recursive = True if placeholder[0] == "_" else False
 
-    try:
-        udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
-    except (AttributeError, IndexError):
-        raise AssertionError(
-            f"Could not extract UDF name from placeholder '{placeholder}'"
-        )
+    # Extract UDF names
+    udf_names = re.findall(r"'(.*?)'", placeholder)
+    assert udf_names, f"Could not extract UDF names from placeholder '{placeholder}'"
 
     # Where to fetch UDF
     if "inp" in placeholder:
@@ -178,20 +188,29 @@ def get_val_from_placeholder(
         obj = step
         obj_type = "step"
 
-    # How to fetch UDF
-    if recursive:
-        assert type(obj) is Artifact, (
-            "Recursive UDF references only allowed for artifacts"
-        )
-        val = fetch_last(obj, udf_name, include_current=True, on_fail=None)
-    else:
-        val = obj.udf.get(udf_name)
+    # Iterate across UDFs
+    for udf_name in udf_names:
+        # How to fetch UDF
+        if recursive:
+            assert type(obj) is Artifact, (
+                "Recursive UDF references only allowed for artifacts"
+            )
+            val = fetch_last(obj, udf_name, include_current=True, on_fail=None)
+        else:
+            val = obj.udf.get(udf_name)
 
-    if val is None:
-        logging.info(
-            f"Could not resolve UDF '{udf_name}' for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
-        )
-        raise SkipCalculation()
+        if val is None:
+            logging.info(
+                f"Could not resolve UDF '{udf_name}' for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' ({obj.id})"
+            )
+            if udf_name != udf_names[-1]:
+                logging.info("Trying next UDF")
+                continue
+            else:
+                logging.info("Skipping calculation")
+                raise SkipCalculation()
+        else:
+            break
 
     # Returned values will pass through eval, so strings need
     # to be escaped to not be interpreted as variables
