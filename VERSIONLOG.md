@@ -1,5 +1,41 @@
 # Scilifelab_epps Version Log
 
+## 20250304.1
+
+Update formulas to match updated [NEB calc tool](https://nebiocalculator.neb.com/#!/dsdnaamt), assuming deprotonated phosphate hydroxyls.
+
+## 20250218.1
+
+Bugfix demux script by skipping outputs that do not contain the relevant sample name.
+
+## 20250212.1
+
+In reads aggregation, do not warn for samples without demux artifacts if they are aborted.
+
+## 20250205.1
+
+Introduce patch to reads aggregation EPP so opened steps don't have to be re-started from scratch.
+
+## 20250201.1
+
+Renovate reads aggregation EPP and include ONT / AVITI.
+
+## 20250123.2
+
+Remove parenthesized content from sample names in MinKNOW samplesheet. This is so the input sample location can be shown easily, without having to change the nature of the sequencing step or interfering with the samplesheet downstream.
+
+## 20250123.1
+
+Shorten MinKNOW samplesheet name, so the timestamp is visible in the MinKNOW file explorer. Also add happy-new-year dir creation.
+
+## 20250122.2
+
+Rebuild EPP to fetch last recorded derived sample UDF.
+
+## 20250122.1
+
+Create yearly dir for AVITI run manifests.
+
 ## 20250116.1
 
 Ruff 0.9.2 formatting.
