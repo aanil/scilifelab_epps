@@ -1,8 +1,12 @@
 # Scilifelab_epps Version Log
 
-## 20250314.1
+## 20250317.2
 
 Apply uppercase to flowcell ID.
+
+## 20250317.1
+
+Replace deprecated pkg_resources package and upgrade CI.
 
 ## 20250304.1
 
