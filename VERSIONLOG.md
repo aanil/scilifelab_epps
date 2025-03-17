@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250317.3
+
+Hotfix of 20250317.1, invalid implementation of function.
+
 ## 20250317.2
 
 Apply uppercase to flowcell ID.

@@ -83,7 +83,7 @@ class EppLogger:
         logging.info(f"Executing file: {sys.argv[0]}")
         logging.info(f"with parameters: {sys.argv[1:]}")
         try:
-            logging.info(f"Version of {self.PACKAGE}: " + version)
+            logging.info(f"Version of {self.PACKAGE}: " + version(self.PACKAGE))
         except PackageNotFoundError as e:
             logging.error(e)
             logging.error(f"Make sure you have the {self.PACKAGE} package installed")
