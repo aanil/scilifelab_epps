@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250317.1
+
+Replace deprecated pkg_resources package and upgrade CI.
+
 ## 20250304.1
 
 Update formulas to match updated [NEB calc tool](https://nebiocalculator.neb.com/#!/dsdnaamt), assuming deprotonated phosphate hydroxyls.
