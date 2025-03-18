@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250318.1
+
+Handle missing PercentMismatch for samples in IndexAssignment.csv
+
 ## 20250317.3
 
 Hotfix of 20250317.1, invalid implementation of function.
