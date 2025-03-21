@@ -226,9 +226,8 @@ def get_val_from_placeholder(
 class SkipCalculation(Exception):
     """Custom exception for skipping calculations."""
 
-    def __init__(self, message="Skipping calculation"):
-        super().__init__(message)
-        logging.info(message)
+    def __init__(self):
+        pass
 
 
 def parse_formula(formula: str) -> tuple[str, list[str]]:
