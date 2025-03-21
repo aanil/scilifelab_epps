@@ -153,7 +153,7 @@ def assign_val_to_placeholder(
 
     if obj.udf.get(udf_name) and not overwrite:
         logging.info(
-            f"UDF {placeholder} already exists and overwrite is False, skipping."
+            f"UDF {placeholder} already exists and overwrite is False. Skipping."
         )
         raise SkipCalculation()
     else:
@@ -226,9 +226,8 @@ def get_val_from_placeholder(
 class SkipCalculation(Exception):
     """Custom exception for skipping calculations."""
 
-    def __init__(self, message="Skipping calculation"):
-        super().__init__(message)
-        logging.info(message)
+    def __init__(self):
+        super().__init__()
 
 
 def parse_formula(formula: str) -> tuple[str, list[str]]:
