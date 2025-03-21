@@ -131,7 +131,7 @@ def assign_val_to_placeholder(
 ) -> None:
     """Assign a value to a UDF placeholder."""
     try:
-        udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]
+        udf_name = re.search(r"\['(.*?)'\]", placeholder).groups()[0]  # type: ignore
     except (AttributeError, IndexError):
         raise AssertionError(
             f"Could not extract UDF name from placeholder '{placeholder}'"
@@ -166,7 +166,7 @@ def get_val_from_placeholder(
     art_in: Artifact | None = None,
     art_out: Artifact | None = None,
     step: Process | None = None,
-) -> str | float:
+) -> str | float | int:
     """Fetch a value from a UDF placeholder."""
     recursive = True if placeholder[0] == "_" else False
 
@@ -214,10 +214,11 @@ def get_val_from_placeholder(
 
     # Returned values will pass through eval, so strings need
     # to be escaped to not be interpreted as variables
-    if type(val) is str:
+    if isinstance(val, str):
         val = f"'{val}'"
 
     logging.info(f"Resolved {placeholder} UDF '{udf_name}' to {val}")
+    assert isinstance(val, (int, str, float)), f"Unexpected type for val: {type(val)}"
 
     return val
 
