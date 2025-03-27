@@ -82,7 +82,9 @@ def get_ont_library_contents(
                 udf_ont_barcode_well = fetch(
                     ont_pooling_input, "ONT Barcode Well", on_fail=None
                 )
-                assert udf_ont_barcode_well, f"Pooling input '{ont_pooling_input.name}' consists of multiple samples, but has not been assigned an ONT barcode."
+                assert udf_ont_barcode_well, (
+                    f"Pooling input '{ont_pooling_input.name}' consists of multiple samples, but has not been assigned an ONT barcode."
+                )
 
                 # Link ONT barcode well to ONT barcode
                 ont_barcode_well2label = {}
@@ -113,9 +115,9 @@ def get_ont_library_contents(
             elif len(ont_pooling_input.samples) == 1:
                 # Remaining possibilities:
                 # (2) ONT-barcodes only
-                assert (
-                    len(ont_pooling_input.reagent_labels) == 1
-                ), f"ONT-pooling input '{ont_pooling_input.name}' lacks any reagent labels. Mixing barcoded and non-barcoded samples is not allowed."
+                assert len(ont_pooling_input.reagent_labels) == 1, (
+                    f"ONT-pooling input '{ont_pooling_input.name}' lacks any reagent labels. Mixing barcoded and non-barcoded samples is not allowed."
+                )
 
                 # ONT barcode-level demultiplexing
                 for ont_sample in ont_pooling_input.samples:
@@ -224,12 +226,12 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
             cursor.execute(query.format(sample.name))
             query_results = cursor.fetchall()
 
-            assert (
-                len(query_results) != 0
-            ), f"No reagent labels found for sample '{sample.name}'."
-            assert (
-                len(query_results) == 1
-            ), f"Multiple reagent labels found for sample '{sample.name}'."
+            assert len(query_results) != 0, (
+                f"No reagent labels found for sample '{sample.name}'."
+            )
+            assert len(query_results) == 1, (
+                f"Multiple reagent labels found for sample '{sample.name}'."
+            )
 
             label = query_results[0][0]
             sample2label[sample.name] = label
@@ -359,9 +361,9 @@ def generate_MinKNOW_samplesheet(process):
             )
 
             # Assert flowcell type is written in a valid format
-            assert (
-                process.udf["ONT flow cell type"] in valid_flowcell_type_strings
-            ), f"Invalid flow cell type {process.udf['ONT flow cell type']}."
+            assert process.udf["ONT flow cell type"] in valid_flowcell_type_strings, (
+                f"Invalid flow cell type {process.udf['ONT flow cell type']}."
+            )
 
             # Parse flowcell product code
             flowcell_product_code = process.udf["ONT flow cell type"].split(" ", 1)[0]
@@ -384,20 +386,22 @@ def generate_MinKNOW_samplesheet(process):
 
             # Assert position makes sense with the flowcell type
             if "PromethION" in row["flow_cell_type"]:
-                assert (
-                    row["position_id"] != "None"
-                ), "Positions must be specified for PromethION flow cells."
+                assert row["position_id"] != "None", (
+                    "Positions must be specified for PromethION flow cells."
+                )
             else:
-                assert (
-                    row["position_id"] == "None"
-                ), "Positions must be unassigned for non-PromethION flow cells."
+                assert row["position_id"] == "None", (
+                    "Positions must be unassigned for non-PromethION flow cells."
+                )
 
             # 1) Barcodes implied from kit selection
             if process.udf.get("ONT expansion kit") != "None" or process.udf.get(
                 "ONT prep kit"
             ) in ["SQK-PCB114-24"]:
                 # Assert barcodes are found within library
-                assert ont_barcodes, f"ONT barcodes are implied from kit selection, but no ONT barcodes were found within library {ont_library.name}"
+                assert ont_barcodes, (
+                    f"ONT barcodes are implied from kit selection, but no ONT barcodes were found within library {ont_library.name}"
+                )
 
                 # Append rows for each barcode
                 alias_column_name = "illumina_pool_name" if qc else "sample_name"
@@ -421,7 +425,9 @@ def generate_MinKNOW_samplesheet(process):
             # 2) No barcodes implied from kit selection
             else:
                 # Assert barcodes are not found within library
-                assert not ont_barcodes, f"Library '{ont_library.name}' appears to contain ONT barcodes, but no ONT barcodes are implied from the kit selection."
+                assert not ont_barcodes, (
+                    f"Library '{ont_library.name}' appears to contain ONT barcodes, but no ONT barcodes are implied from the kit selection."
+                )
 
                 # Append single row
                 rows.append(row)
@@ -443,16 +449,16 @@ def generate_MinKNOW_samplesheet(process):
         assert all(
             ["PromethION" in fc_type for fc_type in df.flow_cell_type.unique()]
         ), "Only PromethION flowcells can be grouped together in the same sample sheet."
-        assert (
-            len(ont_libraries) <= 24
-        ), "Only up to 24 PromethION flowcells may be started at once."
+        assert len(ont_libraries) <= 24, (
+            "Only up to 24 PromethION flowcells may be started at once."
+        )
     elif len(ont_libraries) == 1 and "MinION" in df.flow_cell_type[0]:
-        assert (
-            df.position_id[0] == "None"
-        ), "MinION flow cells should not have a position assigned."
-    assert (
-        len(df.flow_cell_product_code.unique()) == len(df.kit.unique()) == 1
-    ), "All rows must have the same flow cell type and kits"
+        assert df.position_id[0] == "None", (
+            "MinION flow cells should not have a position assigned."
+        )
+    assert len(df.flow_cell_product_code.unique()) == len(df.kit.unique()) == 1, (
+        "All rows must have the same flow cell type and kits"
+    )
     assert (
         len(df.position_id.unique())
         == len(df.flow_cell_id.unique())

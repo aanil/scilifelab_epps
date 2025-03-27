@@ -640,8 +640,8 @@ for lims_kit, labels in lims_kits2labels.items():
 
         # Sanity check that the name/sequence-pairing of an ONT barcode is
         # the same in LIMS as in the ONT documentation.
-        assert (
-            ont_name2seq[label_dict["name"]] == label_dict["seq"]
-        ), f"Barcode {label_dict['name']} sequence is mismatched between LIMS and ONT docs."
+        assert ont_name2seq[label_dict["name"]] == label_dict["seq"], (
+            f"Barcode {label_dict['name']} sequence is mismatched between LIMS and ONT docs."
+        )
 
         ont_label2dict[label] = label_dict
