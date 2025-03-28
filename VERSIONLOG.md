@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250327.1
+
+Re-work ONT barcoding module and it's application for MinKNOW samplesheet generation.
+
 ## 20250318.1
 
 Handle missing PercentMismatch for samples in IndexAssignment.csv
