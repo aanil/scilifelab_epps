@@ -16,6 +16,7 @@ from scilifelab_epps.wrapper import epp_decorator
 regex_project_line = re.compile(r"^\[(P\d+)\][\s]*:")
 TIMESTAMP: str = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
 
+
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
 def main(args):
     lims = Lims(BASEURI, USERNAME, PASSWORD)
