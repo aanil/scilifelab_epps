@@ -67,6 +67,7 @@ def main(args):
             samples[art.id]["lane"] = well.split(":")[0]
 
     note_creation_date = datetime.datetime.now()
+    kit_size = ""  # TODO: get kit size
     for sample in samples.values():
         for project in sample["projects"]:
             note_obj = {
@@ -85,7 +86,7 @@ def main(args):
                 f"Comment from {pro.type.name} ([LIMS]({BASEURI}/clarity/work-details/{pro.id.split('-')[1]}) : \n \
                                 **Sequencing started {date_started} ** \n \
                                 Pool {sample['pool']} in lane {sample['lane']}, {sample['Loading Conc. (pM)']}pM, {sample['% phiX']}% PhiX, \n \
-                                {container_type}-300 FC = {container_name}, on {inst}, {seq_setup} \n \
+                                {container_type}-{kit_size} FC = {container_name}, on {inst}, {seq_setup} \n \
                                 {project_comments} \n \
                                 {general_comments.join('/n')} \n \
                                 /{pro.technician.name}"
