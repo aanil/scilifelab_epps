@@ -219,7 +219,10 @@ def get_val_from_placeholder(
     if isinstance(val, str):
         val = f"'{val}'"
 
-    logging.info(f"Resolved {placeholder} UDF '{udf_name}' to {val}")
+    if len(udf_names) > 1:
+        # Only clarify which UDF was used if multiple ones were provided
+        logging.info(f"Resolved {placeholder} UDF '{udf_name}' to {val}")
+
     assert isinstance(val, (int, str, float)), f"Unexpected type for val: {type(val)}"
 
     return val
