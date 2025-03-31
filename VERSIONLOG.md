@@ -1,8 +1,12 @@
 # Scilifelab_epps Version Log
 
-## 20250321.1
+## 20250331.1
 
 Introduce EPP for generic UDF calculations.
+
+## 20250327.1
+
+Re-work ONT barcoding module and it's application for MinKNOW samplesheet generation.
 
 ## 20250318.1
 
