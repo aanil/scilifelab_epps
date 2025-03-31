@@ -203,9 +203,10 @@ def get_val_from_placeholder(
             if i + 1 < len(udf_names):
                 continue
             else:
+                udf_names_quoted = [f"'{i}'" for i in udf_names]
                 msg = (
                     "Could not resolve any of "
-                    + f"UDFs '{', '.join(udf_names)}' "
+                    + f"UDFs {', '.join(udf_names_quoted)} "
                     + f"for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' "
                     + f"({obj.id}). Skipping calculation."
                 )
