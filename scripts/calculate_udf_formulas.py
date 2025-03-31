@@ -203,10 +203,12 @@ def get_val_from_placeholder(
             if i + 1 < len(udf_names):
                 continue
             else:
-                msg = "Could not resolve any of "
-                +f"UDFs '{', '.join(udf_names)}' "
-                +f"for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' "
-                +f"({obj.id}). Skipping calculation."
+                msg = (
+                    "Could not resolve any of "
+                    + f"UDFs '{', '.join(udf_names)}' "
+                    + f"for {obj_type} '{obj.type.name if 'step' in placeholder else obj.name}' "
+                    + f"({obj.id}). Skipping calculation."
+                )
                 logging.info(msg)
                 raise SkipCalculation()
         else:
