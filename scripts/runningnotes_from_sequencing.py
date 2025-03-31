@@ -3,11 +3,10 @@ DESC = """EPP script to summarize sequencing start results to the projects runni
 """
 import datetime
 import re
-import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
-from genologics.entities import Process, Project
+from genologics.entities import Process  # , Project
 from genologics.lims import Lims
 from write_notes_to_couchdb import write_note_to_couch
 
@@ -58,8 +57,6 @@ def main(args):
 
         sample_item["pool"] = art.name
         samples[art.id] = sample_item
-        if not an_analyte_container:
-            an_analyte_container = art.container
 
     an_analyte_container = pro.output_containers()[0]
     container_name = an_analyte_container.name
