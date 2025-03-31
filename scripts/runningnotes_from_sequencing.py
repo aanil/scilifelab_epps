@@ -14,7 +14,7 @@ from write_notes_to_couchdb import write_note_to_couch
 from scilifelab_epps.wrapper import epp_decorator
 
 regex_projectid_line = re.compile(r"^\[(P\d+)\][\s]*:")
-#regex_projectname_line = re.compile(r"^\[([A-Za-z]+\.[A-Za-z]+_\d{2}_\d{2})\][\s]*:")
+# regex_projectname_line = re.compile(r"^\[([A-Za-z]+\.[A-Za-z]+_\d{2}_\d{2})\][\s]*:")
 TIMESTAMP: str = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
 
 
@@ -38,13 +38,13 @@ def main(args):
                 result = regex_projectid_line.search(line)
                 if result.group(1) not in project_specific_comments:
                     project_specific_comments[result.group(1)] = []
-                project_specific_comments[result.group(1)].append(line[result.end():].strip())
+                project_specific_comments[result.group(1)].append(
+                    line[result.end() :].strip()
+                )
             else:
                 general_comments.append(line.strip())
 
-    date_started = datetime.datetime.fromisoformat(
-        pro.step.date_started
-    ).date()
+    date_started = datetime.datetime.fromisoformat(pro.step.date_started).date()
 
     sample_artifacts = pro.analytes()[0]
     for art in sample_artifacts:
@@ -84,7 +84,7 @@ def main(args):
                 "email": pro.technician.email,
             }
             project_comments = "\n".join(project_specific_comments.get(project, []))
-            #project_comments = "\n".join(project_specific_comments.get(Project(lims, id=project).name, []))
+            # project_comments = "\n".join(project_specific_comments.get(Project(lims, id=project).name, []))
             note_obj["note"] = (
                 f"Comment from {pro.type.name} ([LIMS]({BASEURI}/clarity/work-details/{pro.id.split('-')[1]})) : \n \
                                 **Sequencing started {date_started} ** \n \
