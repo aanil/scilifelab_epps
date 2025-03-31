@@ -243,7 +243,7 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
 
     Also perform various assertions to sanity check the input and prevent code injection.
     """
-    logging.info(f"Parsing formula:\n\t{formula}")
+    logging.info(f"Parsing formula: {formula}")
 
     # Explicate non-placeholders allowed in formula, to prevent code injection
     allowed_functions = [
@@ -330,7 +330,6 @@ def eval_rh(
     ]
 
     # Print equations with placeholders and populated values
-    logging.info(f"        Formula:  {formula_fstring.format(*placeholders)}")
     logging.info(f"    Calculation:  {formula_fstring.format(*values_2f)}")
 
     return lh_val
