@@ -192,9 +192,9 @@ def get_val_from_placeholder(
     for i, udf_name in enumerate(udf_names):
         # How to fetch UDF
         if recursive:
-            assert (
-                type(obj) is Artifact
-            ), "Recursive UDF references only allowed for artifacts"
+            assert type(obj) is Artifact, (
+                "Recursive UDF references only allowed for artifacts"
+            )
             val = fetch_last(obj, udf_name, include_current=True, on_fail=None)
         else:
             val = obj.udf.get(udf_name)
@@ -289,9 +289,9 @@ def parse_formula(formula: str) -> tuple[str, list[str]]:
 
     # Assert contents are empty after stripping
     # If not raise the remainins for troubleshooting
-    assert (
-        formula_stripped == ""
-    ), f"Formula '{formula}' appears to contain disallowed characters: '{formula_stripped}'"
+    assert formula_stripped == "", (
+        f"Formula '{formula}' appears to contain disallowed characters: '{formula_stripped}'"
+    )
 
     return formula_fstring, placeholders
 
@@ -321,9 +321,9 @@ def eval_rh(
     except Exception as e:
         logging.error(f'Could not evaluate: "{rh_eval_string}"')
         raise e
-    assert (
-        type(lh_val) in [float, int, str]
-    ), f'Evaluation of "{rh_eval_string}" gave invalid output: "{lh_val}" of type "{type(lh_val)}"'
+    assert type(lh_val) in [float, int, str], (
+        f'Evaluation of "{rh_eval_string}" gave invalid output: "{lh_val}" of type "{type(lh_val)}"'
+    )
 
     values = [lh_val] + rh_values
     values_2f = [
@@ -394,9 +394,9 @@ def get_formulas(step, formula_field):
     formula_field_contents = [
         step.udf.get(udf_name) for udf_name in udf_names if formula_field in udf_name
     ]
-    assert (
-        len(formula_field_contents) == 1
-    ), f"Searching for '{formula_field}' in step UDFs gave {len(formula_field_contents)} matches."
+    assert len(formula_field_contents) == 1, (
+        f"Searching for '{formula_field}' in step UDFs gave {len(formula_field_contents)} matches."
+    )
     rows = formula_field_contents[0].split("\n")
 
     formulas = []
