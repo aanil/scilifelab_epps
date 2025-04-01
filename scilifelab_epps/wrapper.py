@@ -96,7 +96,7 @@ def epp_decorator(script_path: str, timestamp: str):
 
             # On script success
             else:
-                logging.info("Script completed successfully.")
+                logging.info("Script finished successfully. Uploading log file.")
                 logging.shutdown()
                 upload_file(
                     file_path=log_filename,
@@ -113,6 +113,7 @@ def epp_decorator(script_path: str, timestamp: str):
                     )
                     sys.exit(2)
                 else:
+                    sys.stdout.write("Script finished successfully.")
                     sys.exit(0)
 
         return epp_wrapper
