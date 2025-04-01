@@ -42,12 +42,28 @@ def epp_decorator(script_path: str, timestamp: str):
             )
 
             # Set up logging
-            logging.basicConfig(
-                filename=log_filename,
-                filemode="w",
-                format="%(levelname)s: %(message)s",
-                level=logging.INFO,
-            )
+
+            # Configure root logger
+            logger = logging.getLogger()
+            logger.setLevel(logging.INFO)
+
+            # Clear any existing handlers (to avoid duplicates)
+            for handler in logger.handlers[:]:
+                logger.removeHandler(handler)
+
+            # Create file handler
+            file_handler = logging.FileHandler(log_filename, mode="w")
+            file_handler.setLevel(logging.INFO)
+            file_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+
+            # Create stdout handler
+            stdout_handler = logging.StreamHandler(sys.stdout)
+            stdout_handler.setLevel(logging.INFO)
+            stdout_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+
+            # Add both handlers to logger
+            logger.addHandler(file_handler)
+            logger.addHandler(stdout_handler)
 
             # Start logging
             logging.info(f"Script '{script_name}' started at {timestamp}.")
