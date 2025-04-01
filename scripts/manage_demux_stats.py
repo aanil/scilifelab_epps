@@ -329,7 +329,7 @@ def set_sample_values(demux_process, parser_struct, process_stats):
         # Artifacts in each lane
         for target_file in outarts_per_lane:
             try:
-                # This block adresses a LIMS bug in which multiple samples are tied to the same demux artifact
+                # This block addresses a LIMS bug in which multiple samples are tied to the same demux artifact
                 # In this case, try to find a single sample name matching the name of the demux artifact
                 if len(target_file.samples) > 1:
                     matching_names = [
