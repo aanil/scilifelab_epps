@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250431.1
+
+Update EPP wrapper to send log messages to stdout.
+
 ## 20250327.1
 
 Re-work ONT barcoding module and it's application for MinKNOW samplesheet generation.
