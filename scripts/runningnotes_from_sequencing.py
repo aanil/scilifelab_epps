@@ -92,7 +92,6 @@ def main(args):
     epp_initiator = get_epp_user(lims, pro.id)
     for project in projects:
         project_comments = "\n".join(project_specific_comments.get(project, []))
-        # project_comments = "\n".join(project_specific_comments.get(Project(lims, id=project).name, []))
         pool_text = ""
         for pool_id in projects[project]:
             pool = pools[pool_id]
