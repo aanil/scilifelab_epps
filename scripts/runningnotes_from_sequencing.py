@@ -48,20 +48,18 @@ def main(args):
     date_started = datetime.datetime.fromisoformat(pro.step.date_started).date()
 
     pool_artifacts = pro.analytes()[0]
-    for art in pool_artifacts:
+    for pool_artifact in pool_artifacts:
         pool_obj = {}
-        for name, value in art.udf.items():
+        for name, value in pool_artifact.udf.items():
             pool_obj[name] = value
 
-        pool_obj["pool_name"] = art.name
-        pools[art.id] = pool_obj
-        seen_projects = set()
-        for sample in art.samples:
+        pool_obj["pool_name"] = pool_artifact.name
+        pools[pool_artifact.id] = pool_obj
+        for sample in pool_artifact.samples:
             if sample.project.id not in projects:
-                projects[sample.project.id] = []
-            if sample.project.id not in seen_projects:
-                projects[sample.project.id].append(art.id)
-                seen_projects.add(sample.project.id)
+                projects[sample.project.id] = [pool_artifact.id]
+            else:
+                projects[sample.project.id].append(pool_artifact.id)
 
     # The default value for the Comment field in LIMS contains lines that start with '//' which should be filtered out if they are not removed
     # They could also be used to save info in the step that does not have to be in Genstat
@@ -84,9 +82,9 @@ def main(args):
     an_analyte_container = pro.output_containers()[0]
     container_name = an_analyte_container.name
     container_type = an_analyte_container.type.name
-    for well, art in an_analyte_container.placements.items():
-        if art.id in pools:
-            pools[art.id]["lane"] = well.split(":")[0]
+    for well, pool_artifact in an_analyte_container.placements.items():
+        if pool_artifact.id in pools:
+            pools[pool_artifact.id]["lane"] = well.split(":")[0]
 
     note_creation_date = datetime.datetime.now()
     # kit_size = ""  # TODO: get kit size
