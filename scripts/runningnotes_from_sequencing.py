@@ -7,7 +7,7 @@ import re
 from argparse import ArgumentParser
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
-from genologics.entities import Process  # , Project
+from genologics.entities import Process
 from genologics.lims import Lims
 from write_notes_to_couchdb import write_note_to_couch
 
@@ -42,7 +42,7 @@ def main(args):
 
     for name, value in pro.udf.items():
         pro_udfs[name] = value
-    # Use get for non mandatory UDFs
+    # Use .get() for non-mandatory UDFs
     seq_setup = f"{pro_udfs['Read 1 Cycles']}_{pro_udfs['Index Read 1']}_{pro_udfs.get('Index Read 2', 'x')}_{pro_udfs.get('Read 2 Cycles', 'x')}"
     inst = f"{pro_udfs['Instrument']} {pro_udfs['Side']}"
 
@@ -62,9 +62,9 @@ def main(args):
             else:
                 projects[sample.project.id].append(pool_artifact.id)
 
-    # The default value for the Comment field in LIMS contains lines that start with '//' which should be filtered out if they are not removed
+    # The default value for the "Comments" step field in LIMS contains lines that start with '//' which should be filtered out if they are not removed
     # They could also be used to save info in the step that does not have to be in Genstat
-    for line in pro_udfs.get("Comment").splitlines():
+    for line in pro_udfs.get("Comments").splitlines():
         if not line.startswith("//"):
             if regex_projectid_line.match(line):
                 result = regex_projectid_line.search(line)

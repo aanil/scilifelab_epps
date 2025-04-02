@@ -9,7 +9,7 @@ def get_epp_user(lims, procid):
     """
     Get the EPP user from the database.
     Returns:
-        str: The EPP user.
+        Researcher object for whomever launched the EPP
     """
     # Setup DB connection
     with open("/opt/gls/clarity/users/glsai/config/genosqlrc.yaml") as f:
