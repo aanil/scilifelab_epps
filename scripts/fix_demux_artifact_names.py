@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 DESC = """
-This script adresses a specific LIMS bug in which the demux artifacts of a
+This script addresses a specific LIMS bug in which the demux artifacts of a
 demultiplexing step are associated to multiple samples, instead of a single sample.
 
 The bug is described in deviation #312 on AM.
@@ -84,10 +84,19 @@ def main(args: Namespace):
                 logging.error(msg)
                 continue
 
-            new_name = f"{correct_sample_name} (FASTQ reads)"
-            logging.info(f"Renaming '{demux_art.name}' -> '{new_name}'")
-            demux_art.name = new_name
-            demux_art.put()
+            correct_demux_art_name = f"{correct_sample_name} (FASTQ reads)"
+            if correct_demux_art_name == demux_art.name:
+                logging.info(
+                    f"Demux artifact '{demux_art.name}' ({demux_art.id}) "
+                    + "already has the correct name. Skipping."
+                )
+                continue
+            else:
+                logging.info(
+                    f"Renaming '{demux_art.name}' -> '{correct_demux_art_name}'"
+                )
+                demux_art.name = correct_demux_art_name
+                demux_art.put()
 
 
 if __name__ == "__main__":
