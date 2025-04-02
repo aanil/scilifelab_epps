@@ -88,7 +88,6 @@ def main(args):
             pools[pool_artifact.id]["lane"] = well.split(":")[0]
 
     note_creation_date = datetime.datetime.now()
-    # kit_size = ""  # TODO: get kit size
     epp_initiator = get_epp_user(lims, pro.id)
     for project in projects:
         project_comments = "\n".join(project_specific_comments.get(project, []))
@@ -96,7 +95,6 @@ def main(args):
         for pool_id in projects[project]:
             pool = pools[pool_id]
             pool_text += f"Pool '{pool['pool_name']}' in lane {pool['lane']}, {pool['Loading Conc. (pM)']}pM, {pool['% phiX']}% PhiX, \n"
-        # TODO: get kit size
         note = (
             f"Comment from {pro.type.name} ([LIMS]({BASEURI}/clarity/work-details/{pro.id.split('-')[1]})) : \n"
             f"**Sequencing started {date_started} ** by {pro.technician.name}\n"
