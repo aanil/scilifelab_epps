@@ -11,6 +11,7 @@ from genologics.entities import Process  # , Project
 from genologics.lims import Lims
 from write_notes_to_couchdb import write_note_to_couch
 
+from scilifelab_epps.utils.get_epp_user import get_epp_user
 from scilifelab_epps.wrapper import epp_decorator
 
 regex_projectid_line = re.compile(r"^(P\d+)[\s]*:")
@@ -88,6 +89,7 @@ def main(args):
 
     note_creation_date = datetime.datetime.now()
     # kit_size = ""  # TODO: get kit size
+    epp_initiator = get_epp_user(lims, pro.id)
     for project in projects:
         project_comments = "\n".join(project_specific_comments.get(project, []))
         # project_comments = "\n".join(project_specific_comments.get(Project(lims, id=project).name, []))
@@ -98,12 +100,12 @@ def main(args):
         # TODO: get kit size
         note = (
             f"Comment from {pro.type.name} ([LIMS]({BASEURI}/clarity/work-details/{pro.id.split('-')[1]})) : \n"
-            f"**Sequencing started {date_started} ** \n"
+            f"**Sequencing started {date_started} ** by {pro.technician.name}\n"
             f"{pool_text}"
             f"{container_type} FC={container_name}, on {inst}, {seq_setup} \n"
             f"{project_comments} \n"
             f"{'/n'.join(general_comments)} \n"
-            f"/{pro.technician.name}"
+            f"/{epp_initiator.name}"
         )
         note_obj = {
             "_id": f"{project}:{datetime.datetime.timestamp(note_creation_date)}",
@@ -113,8 +115,8 @@ def main(args):
             "created_at_utc": note_creation_date.isoformat(),
             "updated_at_utc": note_creation_date.isoformat(),
             "projects": [project],
-            "user": pro.technician.name,
-            "email": pro.technician.email,
+            "user": epp_initiator.name,
+            "email": epp_initiator.email,
             "note": note,
         }
         write_note_to_couch(project, note_creation_date, note_obj, BASEURI)
