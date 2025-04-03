@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 DESC = """This script is intended to run as a project automation,
 taking a CSV whose columns are sample names and semi-colon separated
 antibody product numbers.
