@@ -52,7 +52,7 @@ def main(args):
 
     # Parse and assert csv file
     csv = matching_files[0]
-    csv_name = f.original_location
+    csv_name = csv.original_location
     csv_contents = lims.get_file_contents(csv.id)
     lines = csv_contents.splitlines()
     header = lines[0]
