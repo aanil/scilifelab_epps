@@ -5,10 +5,11 @@ import os
 import sys
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
-from genologics.entities import Process
+from genologics.entities import Process, Researcher
 from genologics.lims import Lims
 
 from scilifelab_epps.epp import upload_file
+from scilifelab_epps.utils.get_epp_user import get_epp_user
 
 
 def epp_decorator(script_path: str, timestamp: str):
@@ -28,6 +29,9 @@ def epp_decorator(script_path: str, timestamp: str):
             lims.check_version()
             process = Process(lims, id=args.pid)
 
+            # Get EPP user
+            epp_user: Researcher = get_epp_user(lims, args.pid)
+
             # Name log file
             log_filename: str = (
                 "_".join(
@@ -35,7 +39,7 @@ def epp_decorator(script_path: str, timestamp: str):
                         script_name,
                         process.id,
                         timestamp,
-                        process.technician.name.replace(" ", ""),
+                        epp_user.name.replace(" ", ""),
                     ]
                 )
                 + ".log"
@@ -66,7 +70,9 @@ def epp_decorator(script_path: str, timestamp: str):
             logger.addHandler(stdout_handler)
 
             # Start logging
-            logging.info(f"Script '{script_name}' started at {timestamp}.")
+            logging.info(
+                f"Script '{script_name}' started at {timestamp} by {epp_user.name}."
+            )
             logging.info(
                 f"Launched in step '{process.type.name}' ({process.id}) opened by {process.technician.name}."
             )
