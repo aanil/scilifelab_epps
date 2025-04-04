@@ -65,8 +65,9 @@ def epp_decorator(script_path: str, timestamp: str):
 
             # Set up logging
 
-            # Configure root logger
+            # Set custom subclass as root logger
             logger = TrackingRootLogger(level=logging.INFO)
+            logging.root = logger
 
             # Clear any existing handlers (to avoid duplicates)
             for handler in logger.handlers[:]:
