@@ -2,7 +2,7 @@
 
 ## 20250504.1
 
-Convert list of artifacts to set to get unique values to avoid repeating lines in running notes 
+Convert list of artifacts to set to get unique values to avoid repeating lines in running notes
 
 ## 20250328.1
 
