@@ -12,6 +12,24 @@ from scilifelab_epps.epp import upload_file
 from scilifelab_epps.utils.get_epp_user import get_epp_user
 
 
+class TrackingRootLogger(logging.RootLogger):
+    """A root logger that tracks whether any errors or warnings have been emitted."""
+
+    def __init__(self, level):
+        """Initialize with the given level and errors_or_warnings set to False."""
+        super().__init__(level)
+        self.errors_or_warnings = False
+
+    def handle(self, record):
+        """Handle a log record and track if it's an error or warning."""
+        # Check if the record is a warning or error before handling it
+        if record.levelno >= logging.WARNING:
+            self.errors_or_warnings = True
+
+        # Let the parent class handle the record normally
+        return super().handle(record)
+
+
 def epp_decorator(script_path: str, timestamp: str):
     """This top-level decorator is meant to be used on EPP scripts' main functions.
 
@@ -48,8 +66,7 @@ def epp_decorator(script_path: str, timestamp: str):
             # Set up logging
 
             # Configure root logger
-            logger = logging.getLogger()
-            logger.setLevel(logging.INFO)
+            logger = TrackingRootLogger(level=logging.INFO)
 
             # Clear any existing handlers (to avoid duplicates)
             for handler in logger.handlers[:]:
@@ -109,11 +126,10 @@ def epp_decorator(script_path: str, timestamp: str):
                     file_slot=args.log,
                     process=process,
                     lims=lims,
+                    remove=True,
                 )
                 # Check log for errors and warnings
-                log_content = open(log_filename).read()
-                os.remove(log_filename)
-                if "ERROR:" in log_content or "WARNING:" in log_content:
+                if logger.errors_or_warnings:
                     sys.stderr.write(
                         "Script finished successfully, but log contains errors or warnings, please have a look."
                     )
