@@ -401,9 +401,8 @@ def get_formulas(step, formula_field):
 
     formulas = []
     for row in rows:
-        if row == "":
-            continue
-        if row[0] == "#":
+        row = row.strip()
+        if not row or row[0] == "#":
             continue
         formulas.append(row)
 
