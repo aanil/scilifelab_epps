@@ -148,9 +148,6 @@ def assign_val_to_placeholder(
         assert step, "Step not provided"
         obj = step
 
-    if type(val) is float:
-        val = round(val, 2)
-
     if obj.udf.get(udf_name) and not overwrite:
         logging.info(
             f"UDF {placeholder} already exists and overwrite is False. Skipping calculation."
