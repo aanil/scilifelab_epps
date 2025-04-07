@@ -1,8 +1,12 @@
 # Scilifelab_epps Version Log
 
-## 20250504.1
+## 20250405.1
 
 Convert list of artifacts to set to get unique values to avoid repeating lines in running notes
+
+## 20250431.1
+
+Update EPP wrapper to send log messages to stdout.
 
 ## 20250328.1
 
