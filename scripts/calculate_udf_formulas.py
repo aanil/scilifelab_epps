@@ -32,7 +32,7 @@ Syntax explained:
     - UDF placeholders
 
         A special string referencing a UDF name in an artifact or step, and whether to fetch
-        it recursively. Can also be supplied as a prioritized list of UDF names.
+        it recursively (indicated by a leading underscore). Can also be supplied as a prioritized list of UDF names.
 
         E.g.
             inp['foo']      step input artifact UDF 'foo'
