@@ -36,7 +36,7 @@ from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
 from genologics.lims import Lims
 
-from scripts.generate_minknow_samplesheet import get_pool_sample_label_mapping
+from scilifelab_epps.epp import get_pool_sample_label_mapping
 
 TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
 
