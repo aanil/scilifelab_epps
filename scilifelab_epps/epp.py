@@ -588,26 +588,58 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
     )
     cursor = connection.cursor()
 
-    # Find all reagent labels linked to 'analyte' type artifacts matching the given name
     query = """
-        select
-            distinct( rl.name )
-        from
-            reagentlabel            rl,
-            artifact                art,
-            artifact_label_map      alm
-        where
-            rl.labelid              = alm.labelid
-            and art.artifactid      = alm.artifactid
-            and art.artifacttypeid  = 2
-            and art.name            = '{}';
+        WITH RECURSIVE artifact_hierarchy AS (
+            -- Base case: start with the child artifact
+            SELECT
+                a.artifactid,
+                a.name,
+                a.artifacttypeid,
+                ARRAY[a.artifactid] AS path,
+                0 AS depth
+            FROM
+                artifact a
+            WHERE
+                a.artifactid = 5868009
+
+            UNION ALL
+
+            -- Recursive case: find all ancestors
+            SELECT
+                parent.artifactid,
+                parent.name,
+                parent.artifacttypeid,
+                ah.path || parent.artifactid,
+                ah.depth + 1
+            FROM
+                artifact_hierarchy ah
+                JOIN artifact_ancestor_map aam ON ah.artifactid = aam.artifactid
+                JOIN artifact parent ON aam.ancestorartifactid = parent.artifactid
+            WHERE
+                NOT parent.artifactid = ANY(ah.path)  -- Prevent cycles
+                AND ah.depth < 50  -- Prevent infinite recursion (adjust as needed)
+        )
+
+        -- Query the results, excluding the starting artifact
+        SELECT
+            distinct(rl.name)
+        FROM
+            artifact_hierarchy ah
+            LEFT JOIN artifact_label_map alm ON ah.artifactid = alm.artifactid
+            LEFT JOIN reagentlabel rl ON rl.labelid = alm.labelid
+        WHERE
+            ah.depth > 0  -- Skip the starting artifact
+            AND ah.artifacttypeid = 2
+            AND ah.name = 'P30455_101'
+            AND rl.name IS NOT NULL;
     """
 
     errors = False
     sample2label = {}
+    pool_id_number = int(pool.id.split("-")[1])
     for sample in pool.samples:
         try:
-            cursor.execute(query.format(sample.name))
+            cursor.execute(query.format(pool_id_number, sample.name))
             query_results = cursor.fetchall()
 
             assert len(query_results) != 0, (
