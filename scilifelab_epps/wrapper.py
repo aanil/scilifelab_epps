@@ -51,7 +51,7 @@ def epp_decorator(script_path: str, timestamp: str):
             try:
                 epp_user: Researcher = get_epp_user(lims, args.pid)
             except:
-                epp_user = process.technician
+                epp_user = None
 
             # Name log file
             log_filename: str = (
@@ -60,7 +60,7 @@ def epp_decorator(script_path: str, timestamp: str):
                         script_name,
                         process.id,
                         timestamp,
-                        epp_user.name.replace(" ", ""),
+                        (epp_user or process.technician).name.replace(" ", ""),
                     ]
                 )
                 + ".log"
@@ -92,7 +92,7 @@ def epp_decorator(script_path: str, timestamp: str):
 
             # Start logging
             logging.info(
-                f"Script '{script_name}' started at {timestamp} by {epp_user.name}."
+                f"Script '{script_name}' started at {timestamp} by {(epp_user.name if epp_user else 'unknown')}."
             )
             logging.info(
                 f"Launched in step '{process.type.name}' ({process.id}) opened by {process.technician.name}."
