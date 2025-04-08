@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250408.1
+
+Set up fall-back for get_epp_user() failing in wrapper.
+
 ## 20250405.1
 
 Convert list of artifacts to set to get unique values to avoid repeating lines in running notes
