@@ -48,7 +48,10 @@ def epp_decorator(script_path: str, timestamp: str):
             process = Process(lims, id=args.pid)
 
             # Get EPP user
-            epp_user: Researcher = get_epp_user(lims, args.pid)
+            try:
+                epp_user: Researcher = get_epp_user(lims, args.pid)
+            except:
+                epp_user = process.technician
 
             # Name log file
             log_filename: str = (
