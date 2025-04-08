@@ -600,7 +600,7 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
             FROM
                 artifact a
             WHERE
-                a.artifactid = 5868009
+                a.artifactid = {}
 
             UNION ALL
 
@@ -630,7 +630,7 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
         WHERE
             ah.depth > 0  -- Skip the starting artifact
             AND ah.artifacttypeid = 2
-            AND ah.name = 'P30455_101'
+            AND ah.name = '{}'
             AND rl.name IS NOT NULL;
     """
 
