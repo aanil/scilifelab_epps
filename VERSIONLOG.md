@@ -1,6 +1,6 @@
 # Scilifelab_epps Version Log
 
-## 20250401.1
+## 20250408.1
 
 Introduce new EPP to fix bugged demux artifacts with multiple samples in the name by using sample-label linkage to identify the "correct" sample and rename the demux artifact accordingly.
 Demux EPP: Add logic block to handle demux artifacts being tied to multiple samples, in which case try to choose a single sample matching the name of the demux artifact.
