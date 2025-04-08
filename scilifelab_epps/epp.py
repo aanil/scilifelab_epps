@@ -589,16 +589,24 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
     cursor = connection.cursor()
 
     query = """
-        WITH RECURSIVE artifact_hierarchy AS (
+        -- Given an artifact and a name:
+        --  find all its ancestral artifacts with that name
+        WITH RECURSIVE artifact_history AS (
             -- Base case: start with the child artifact
             SELECT
                 a.artifactid,
                 a.name,
-                a.artifacttypeid,
+                a.luid,
+                p.processid,
+                p.luid as process_luid,
+                ps.name as step_name,
                 ARRAY[a.artifactid] AS path,
                 0 AS depth
             FROM
                 artifact a
+                LEFT JOIN processiotracker pio on pio.inputartifactid = a.artifactid
+                LEFT JOIN process p on p.processid = pio.processid
+                LEFT JOIN protocolstep ps on ps.stepid = p.protocolstepid
             WHERE
                 a.artifactid = {}
 
@@ -608,30 +616,54 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
             SELECT
                 parent.artifactid,
                 parent.name,
-                parent.artifacttypeid,
+                parent.luid,
+                p_p.processid,
+                p_p.luid as process_luid,
+                p_ps.name as step_name,
                 ah.path || parent.artifactid,
                 ah.depth + 1
             FROM
-                artifact_hierarchy ah
+                artifact_history ah
                 JOIN artifact_ancestor_map aam ON ah.artifactid = aam.artifactid
                 JOIN artifact parent ON aam.ancestorartifactid = parent.artifactid
+                LEFT JOIN processiotracker p_pio on p_pio.inputartifactid = parent.artifactid
+                LEFT JOIN process p_p on p_p.processid = p_pio.processid
+                LEFT JOIN protocolstep p_ps on p_ps.stepid = p_p.protocolstepid
             WHERE
                 NOT parent.artifactid = ANY(ah.path)  -- Prevent cycles
                 AND ah.depth < 50  -- Prevent infinite recursion (adjust as needed)
+                AND parent.artifacttypeid = 2
+                AND parent.name = '{}'
+        ),
+
+        -- Find any reagent labels linked to the ancestral artifacts
+        labeled_artifacts AS (
+            SELECT DISTINCT
+                ah.artifactid,
+                ah.name,
+                ah.luid,
+                ah.processid,
+                ah.step_name,
+                ah.process_luid,
+                alm.labelid,
+                rl.name AS label_name
+            FROM
+                artifact_history ah  -- Changed from artifact_hierarchy to match CTE name
+                LEFT JOIN artifact_label_map alm ON ah.artifactid = alm.artifactid
+                LEFT JOIN reagentlabel rl ON rl.labelid = alm.labelid
+            WHERE
+                ah.depth > 0  -- Skip the starting artifact
+            ORDER BY
+                ah.processid DESC
         )
 
-        -- Query the results, excluding the starting artifact
-        SELECT
-            distinct(rl.name)
+        -- Show distinct reagent labels
+        SELECT DISTINCT
+            la.label_name
         FROM
-            artifact_hierarchy ah
-            LEFT JOIN artifact_label_map alm ON ah.artifactid = alm.artifactid
-            LEFT JOIN reagentlabel rl ON rl.labelid = alm.labelid
+            labeled_artifacts la
         WHERE
-            ah.depth > 0  -- Skip the starting artifact
-            AND ah.artifacttypeid = 2
-            AND ah.name = '{}'
-            AND rl.name IS NOT NULL;
+            la.label_name IS NOT NULL;
     """
 
     errors = False
