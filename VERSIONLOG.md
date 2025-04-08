@@ -2,7 +2,21 @@
 
 ## 20250401.1
 
+Introduce new EPP to fix bugged demux artifacts with multiple samples in the name by using sample-label linkage to identify the "correct" sample and rename the demux artifact accordingly.
 Demux EPP: Add logic block to handle demux artifacts being tied to multiple samples, in which case try to choose a single sample matching the name of the demux artifact.
+Utility function for mapping samples to labels in pool: Move into main module
+
+## 20250405.1
+
+Convert list of artifacts to set to get unique values to avoid repeating lines in running notes
+
+## 20250431.1
+
+Update EPP wrapper to send log messages to stdout.
+
+## 20250328.1
+
+Add script to add running notes from the step Load to Flowcell (NovaSeqXPlus) v1.0.
 
 ## 20250327.1
 
