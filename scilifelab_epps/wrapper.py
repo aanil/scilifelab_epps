@@ -50,7 +50,7 @@ def epp_decorator(script_path: str, timestamp: str):
             # Get EPP user
             try:
                 epp_user: Researcher = get_epp_user(lims, args.pid)
-            except:
+            except ValueError:
                 epp_user = None
 
             # Name log file
