@@ -95,7 +95,7 @@ def main(args: Namespace):
                 continue
             else:
                 logging.info(
-                    f"Renaming '{demux_art.name}' -> '{correct_demux_art_name}'"
+                    f"Renaming '{demux_art.name}' ({demux_art.id}) -> '{correct_demux_art_name}'"
                 )
                 demux_art.name = correct_demux_art_name
                 demux_art.put()
