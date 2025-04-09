@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250409.1
+
+Change get_epp_user query to account for differet epp triggers
+
 ## 20250408.1
 
 Set up fall-back for get_epp_user() failing in wrapper.
