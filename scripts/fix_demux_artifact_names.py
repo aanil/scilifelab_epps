@@ -37,10 +37,12 @@ from genologics.entities import Process
 from genologics.lims import Lims
 
 from scilifelab_epps.epp import get_pool_sample_label_mapping
+from scilifelab_epps.wrapper import epp_decorator
 
 TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
 
 
+@epp_decorator(__file__, TIMESTAMP)
 def main(args: Namespace):
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
@@ -93,7 +95,7 @@ def main(args: Namespace):
                 continue
             else:
                 logging.info(
-                    f"Renaming '{demux_art.name}' -> '{correct_demux_art_name}'"
+                    f"Renaming '{demux_art.name}' ({demux_art.id}) -> '{correct_demux_art_name}'"
                 )
                 demux_art.name = correct_demux_art_name
                 demux_art.put()
