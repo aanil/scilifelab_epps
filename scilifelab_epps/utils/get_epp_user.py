@@ -28,7 +28,7 @@ def get_epp_user(lims, procid):
         AND acl.tablename = 'externalprogramstatus'
         JOIN auditeventlog ael ON ael.eventid = acl.eventid
         WHERE ael.eventtype ='EPP_CONSUME_NEXT_REQUEST'
-        AND eps.processid = {procid.split('-')[1]}
+        AND eps.processid = {procid.split("-")[1]}
         AND eps.status = 'RUNNING';
      """
 
