@@ -588,7 +588,7 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
     )
     cursor = connection.cursor()
 
-    query = """
+    query = """--sql
         -- Given an artifact and a name:
         --  find all its ancestral artifacts with that name
         WITH RECURSIVE artifact_history AS (
