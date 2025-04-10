@@ -293,7 +293,13 @@ def set_sample_values(demux_process, parser_struct, process_stats):
         samplesum = dict()
 
         try:
-            outarts_per_lane = demux_process.outputs_per_input(pool.id, ResultFile=True)
+            outarts_per_lane = []
+            for art_tuple in demux_process.input_output_maps:
+                if (
+                    art_tuple[0]["uri"].id == pool.id
+                    and art_tuple[1]["output-generation-type"] == "PerReagentLabel"
+                ):
+                    outarts_per_lane.append(art_tuple[1]["uri"])
         except Exception as e:
             problem_handler("exit", f"Unable to fetch artifacts of process: {str(e)}")
         if process_stats["Instrument"] == "miseq":
@@ -354,9 +360,6 @@ def set_sample_values(demux_process, parser_struct, process_stats):
                     "exit",
                     f"Unable to determine sample name. Incorrect sample variable in process: {str(e)}",
                 )
-            # Skip artifacts that are not sample-related
-            if current_name not in target_file.name:
-                continue
             for entry in parser_struct:
                 if lane_no == entry["Lane"]:
                     sample = entry["Sample"]
