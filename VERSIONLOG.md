@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250410.2
+
+Patch last PR, don't include file slot artifacts in logic for parsing demux artifacts.
+
 ## 20250410.1
 
 Introduce new EPP to fix bugged demux artifacts with multiple samples in the name by using sample-label linkage to identify the "correct" sample and rename the demux artifact accordingly.
