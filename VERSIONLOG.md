@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250410.3
+
+Change get_epp_user query to account for differet epp triggers
+
 ## 20250410.2
 
 Patch last PR, don't include file slot artifacts in logic for parsing demux artifacts.
