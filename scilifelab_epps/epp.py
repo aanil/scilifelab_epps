@@ -16,6 +16,8 @@ from logging.handlers import RotatingFileHandler
 from shutil import copy
 from time import localtime, strftime
 
+import psycopg2
+import yaml
 from genologics.config import MAIN_LOG
 from genologics.entities import Artifact, Process
 from genologics.lims import Lims
@@ -568,3 +570,64 @@ def upload_file(
     if remove:
         os.remove(file_path)
         logging.info(f"'{file_path}' removed from local filesystem.")
+
+
+def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
+    """Given a pool artifact containing labeled samples, use database queries to
+    build a dictionary mapping each sample name to its reagent label.
+    """
+    with open("/opt/gls/clarity/users/glsai/config/genosqlrc.yaml") as f:
+        config = yaml.safe_load(f)
+
+    # Setup DB connection
+    connection = psycopg2.connect(
+        user=config["username"],
+        host=config["url"],
+        database=config["db"],
+        password=config["password"],
+    )
+    cursor = connection.cursor()
+
+    # Find all reagent labels linked to 'analyte' type artifacts matching the given name
+    query = """
+        select
+            distinct( rl.name )
+        from
+            reagentlabel            rl,
+            artifact                art,
+            artifact_label_map      alm
+        where
+            rl.labelid              = alm.labelid
+            and art.artifactid      = alm.artifactid
+            and art.artifacttypeid  = 2
+            and art.name            = '{}';
+    """
+
+    errors = False
+    sample2label = {}
+    for sample in pool.samples:
+        try:
+            cursor.execute(query.format(sample.name))
+            query_results = cursor.fetchall()
+
+            assert len(query_results) != 0, (
+                f"No reagent labels found for sample '{sample.name}'."
+            )
+            assert len(query_results) == 1, (
+                f"Multiple reagent labels found for sample '{sample.name}'."
+            )
+
+            label = query_results[0][0]
+            sample2label[sample.name] = label
+        except AssertionError as e:
+            logging.error(str(e), exc_info=True)
+            logging.warning(f"Skipping sample '{sample.name}' due to error.")
+            errors = True
+            continue
+
+    if errors:
+        raise AssertionError(
+            "Errors occurred when linking samples and indices. Please report this error."
+        )
+    else:
+        return sample2label
