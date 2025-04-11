@@ -588,90 +588,40 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
     )
     cursor = connection.cursor()
 
+    """Supply a pool artifact ID and a sample name:
+    1. Find the ancestor artifacts of the pool artifact.
+    2. Filter for derived sample artifacts
+    3. Filter for artifacts sharing a name with the target sample
+    4. Filter for artifacts with reagent labels
+    """
     query = """--sql
-        -- Given an artifact and a name:
-        --  find all its ancestral artifacts with that name
-        WITH RECURSIVE artifact_history AS (
-            -- Base case: start with the child artifact
-            SELECT
-                a.artifactid,
-                a.name,
-                a.luid,
-                p.processid,
-                p.luid as process_luid,
-                ps.name as step_name,
-                ARRAY[a.artifactid] AS path,
-                0 AS depth
-            FROM
-                artifact a
-                LEFT JOIN processiotracker pio on pio.inputartifactid = a.artifactid
-                LEFT JOIN process p on p.processid = pio.processid
-                LEFT JOIN protocolstep ps on ps.stepid = p.protocolstepid
-            WHERE
-                a.artifactid = {}
-
-            UNION ALL
-
-            -- Recursive case: find all ancestors
-            SELECT
-                parent.artifactid,
-                parent.name,
-                parent.luid,
-                p_p.processid,
-                p_p.luid as process_luid,
-                p_ps.name as step_name,
-                ah.path || parent.artifactid,
-                ah.depth + 1
-            FROM
-                artifact_history ah
-                JOIN artifact_ancestor_map aam ON ah.artifactid = aam.artifactid
-                JOIN artifact parent ON aam.ancestorartifactid = parent.artifactid
-                LEFT JOIN processiotracker p_pio on p_pio.inputartifactid = parent.artifactid
-                LEFT JOIN process p_p on p_p.processid = p_pio.processid
-                LEFT JOIN protocolstep p_ps on p_ps.stepid = p_p.protocolstepid
-            WHERE
-                NOT parent.artifactid = ANY(ah.path)  -- Prevent cycles
-                AND ah.depth < 50  -- Prevent infinite recursion (adjust as needed)
-                AND parent.artifacttypeid = 2
-                AND parent.name = '{}'
-        ),
-
-        -- Find any reagent labels linked to the ancestral artifacts
-        labeled_artifacts AS (
-            SELECT DISTINCT
-                ah.artifactid,
-                ah.name,
-                ah.luid,
-                ah.processid,
-                ah.step_name,
-                ah.process_luid,
-                alm.labelid,
-                rl.name AS label_name
-            FROM
-                artifact_history ah  -- Changed from artifact_hierarchy to match CTE name
-                LEFT JOIN artifact_label_map alm ON ah.artifactid = alm.artifactid
-                LEFT JOIN reagentlabel rl ON rl.labelid = alm.labelid
-            WHERE
-                ah.depth > 0  -- Skip the starting artifact
-            ORDER BY
-                ah.processid DESC
-        )
-
-        -- Show distinct reagent labels
-        SELECT DISTINCT
-            la.label_name
+        SELECT
+            DISTINCT rl.name
         FROM
-            labeled_artifacts la
+            -- Table mapping artifact IDs to ancestor artifact IDs
+            artifact_ancestor_map aam
+            -- Join artifact information on ancestor artifact IDs
+            JOIN artifact parent ON aam.ancestorartifactid = parent.artifactid
+            -- Join reagent label information on ancestor artifact IDs
+            LEFT JOIN artifact_label_map alm ON parent.artifactid = alm.artifactid
+            LEFT JOIN reagentlabel rl ON rl.labelid = alm.labelid
         WHERE
-            la.label_name IS NOT NULL;
+            -- The pool artifact ID is used to find its ancestors
+            aam.artifactid = {}
+            -- Filter for derived sample artifacts
+            AND parent.artifacttypeid = 2 AND parent.isoriginal = 'f'
+            -- Filter for artifacts sharing a name with the target sample
+            AND parent.name = '{}'
+            -- Filter for artifacts with reagent labels
+            AND rl.name IS NOT NULL;
     """
 
     errors = False
     sample2label = {}
-    pool_id_number = int(pool.id.split("-")[1])
+    pool_db_id = int(pool.id.split("-")[1])
     for sample in pool.samples:
         try:
-            cursor.execute(query.format(pool_id_number, sample.name))
+            cursor.execute(query.format(pool_db_id, sample.name))
             query_results = cursor.fetchall()
 
             assert len(query_results) != 0, (
