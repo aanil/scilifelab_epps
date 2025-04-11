@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250411.1
+
+Introduce EPP for generic UDF calculations.
+
 ## 20250410.3
 
 Change get_epp_user query to account for differet epp triggers
