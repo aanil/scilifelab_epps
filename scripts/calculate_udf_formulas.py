@@ -18,26 +18,35 @@ from scilifelab_epps.utils.formula import (
 from scilifelab_epps.utils.udf_tools import fetch_last, get_art_tuples
 from scilifelab_epps.wrapper import epp_decorator
 
-DESC = """Script to perform UDF calculations on input-output level by reading equations
-with special syntax from a step UDF text field.
+DESC = """Script to perform calculations on input/output/step fields
+by reading equations with special syntax from a step field.
 
-The whole idea is to have a single calculation script whose behavior can be customized
-on a step-by-step basis in the front-end configuration.
+The whole idea is to have a single calculation script whose behavior can be
+customized on a step-by-step basis in the LIMS front-end configuration.
 
-The text field can contain multiple equations on one line each. Lines prefixed with '#'
-will be ignored as comments.
+The equations are herein referred to as "formulas" and the input/output/step fields
+are referenced using special syntax "placeholders".
 
-Syntax explained:
+
+Simple example:
+
+    # This formula will calculate the field 'Sample volume (ul)' in the outputs of a step
+    # It uses three different UDF placeholders
+
+    outp['Diluted volume (ul)'] = outp['Sample volume (ul)'] + outp['Buffer volume (ul)']
+
+
+Defintions:
 
     - UDF placeholders
 
-        A special string referencing a UDF name in an artifact or step, and whether to fetch
-        it recursively (indicated by a leading underscore). Can also be supplied as a prioritized list of UDF names.
+        A special string referencing a UDF name in an input/output/step, and whether to fetch
+        it recursively (indicated by a leading underscore). Can also be supplied as a
+        prioritized list of UDF names.
 
         E.g.
             inp['foo']      step input artifact UDF 'foo'
-            _outp['bar']    artifact UDF 'bar', fetched recursively from step output
-                            artifact
+            _outp['bar']    artifact UDF 'bar', fetched recursively from step output artifact
             step['A', 'B']  step UDF 'A', or 'B' if 'A' is not found
 
     - Formulas
@@ -49,9 +58,9 @@ Syntax explained:
         replacing UDF placeholders with their corresponding values.
 
         The separator between the left and right hand side can be either '=' or '==',
-        where the former will overwrite existing UDFs and the latter will silently pass
-        them. The latter case is useful for making sure multiple formulas do not
-        overwrite one another, i.e. the first calculation to write to the field will be
+        where the former will overwrite existing UDFs and the latter will not.
+        The latter case is useful for making sure multiple formulas do not overwrite
+        one another, i.e. the first calculation to write to the field will be
         the one to stick.
 
         Right-hand side placeholders that can't be resolved will result in skipping the
@@ -59,7 +68,17 @@ Syntax explained:
         the same UDF that can be run in priority order without raising errors or
         warnings.
 
-Examples:
+        Formulas are only allowed to contain
+        - UDF placeholders
+        - pure math, i.e. numbers, operators and parentheses
+        - allowed functions
+            - ng_ul, nM: For enforcing a unit-ambiguous concentration to be in
+                ng/ul or nM, respectively.
+            - fmol_to_ng, ng_to_fmol, ng_ul_to_nM, nM_to_ng_ul
+                For converting between concentration units
+        - allowed strings (e.g. 'ng/ul', 'nM')
+
+Complex examples:
 
     1) Calculate the ng and fmol amount from a given concentration, volume and size of
        an output artifact.
@@ -69,23 +88,24 @@ Examples:
 
 
     2) Prioritized calculations! Populate three UDFs, based on the supplied value of one
-       of them, in priority order.
+       of them, in priority order. Useful for having flexibility in what to base calculations on.
+       It is done by having multiple non-overwriting (==) formulas trying to write to the same field
+       from different inputs. The first one to resolve will be the one to stick.
 
-        # Calculate from 'Amount for prep (fmol)'
+        # Calculate ng amount and volume from given fmol amount
         outp['Amount for prep (ng)'] == fmol_to_ng(outp['Amount for prep (fmol)'], _outp['Size (bp)'])
         outp['Volume to take (uL)'] == fmol_to_ng(outp['Amount for prep (fmol)'], _outp['Size (bp)']) / ng_ul(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
 
-        # Calculate from 'Amount for prep (ng)'
+        # Calculate fmol amount and volume from given ng amount
         outp['Amount for prep (fmol)'] == ng_to_fmol(outp['Amount for prep (ng)'], _outp['Size (bp)'])
         outp['Volume to take (uL)'] == ng_to_fmol(outp['Amount for prep (ng)'], _outp['Size (bp)']) / nM(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
 
-        # Calculate from 'Volume to take (uL)'
+        # Calculate fmol amount and ng amount given volume
         outp['Amount for prep (fmol)'] == outp['Volume to take (uL)'] * nM(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
         outp['Amount for prep (ng)'] == outp['Volume to take (uL)'] * ng_ul(inp['Concentration'], inp['Conc. Units'], _outp['Size (bp)'])
 
 
-    3) Prioritized UDFs! Fields signifying the same thing in the calculation may be called
-       different things depending on parent step.
+    3) Prioritized UDFs! Fallback to using a different field, if the first one is not found.
 
         # Calculate amounts from input amounts by volume fraction
         outp['Amount (ng)'] = ( outp['Volume to take (uL)'] / inp['Volume (ul)', 'Total Volume (uL)'] ) * inp['Amount (ng)', 'Amount for prep (ng)']
