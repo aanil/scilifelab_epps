@@ -609,7 +609,7 @@ def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
             -- The pool artifact ID is used to find its ancestors
             aam.artifactid = {}
             -- Filter for derived sample artifacts
-            AND parent.artifacttypeid = 2 AND parent.isoriginal = 'f'
+            AND parent.artifacttypeid = 2
             -- Filter for artifacts sharing a name with the target sample
             AND parent.name = '{}'
             -- Filter for artifacts with reagent labels
