@@ -293,7 +293,13 @@ def set_sample_values(demux_process, parser_struct, process_stats):
         samplesum = dict()
 
         try:
-            outarts_per_lane = demux_process.outputs_per_input(pool.id, ResultFile=True)
+            outarts_per_lane = []
+            for art_tuple in demux_process.input_output_maps:
+                if (
+                    art_tuple[0]["uri"].id == pool.id
+                    and art_tuple[1]["output-generation-type"] == "PerReagentLabel"
+                ):
+                    outarts_per_lane.append(art_tuple[1]["uri"])
         except Exception as e:
             problem_handler("exit", f"Unable to fetch artifacts of process: {str(e)}")
         if process_stats["Instrument"] == "miseq":
@@ -332,6 +338,9 @@ def set_sample_values(demux_process, parser_struct, process_stats):
                 # This block addresses a LIMS bug in which multiple samples are tied to the same demux artifact
                 # In this case, try to find a single sample name matching the name of the demux artifact
                 if len(target_file.samples) > 1:
+                    logging.warning(
+                        f"Multiple samples {[i.name for i in target_file.samples]} linked to demux artifact '{target_file.name}' ({target_file.id})."
+                    )
                     matching_names = [
                         sample.name
                         for sample in target_file.samples
@@ -339,11 +348,11 @@ def set_sample_values(demux_process, parser_struct, process_stats):
                     ]
                     if len(matching_names) > 1:
                         raise AssertionError(
-                            "Multiple samples tied to demux artifact more than one sample name matches demux artifact name."
+                            f"Multiple linked samples '{matching_names}' matches demux artifact name. Cannot tell which is which."
                         )
                     elif len(matching_names) == 0:
                         raise AssertionError(
-                            "Multiple samples tied to demux artifact no sample name matches demux artifact name."
+                            "No linked sample matches demux artifact name."
                         )
                     else:
                         current_name = matching_names[0]
@@ -354,9 +363,6 @@ def set_sample_values(demux_process, parser_struct, process_stats):
                     "exit",
                     f"Unable to determine sample name. Incorrect sample variable in process: {str(e)}",
                 )
-            # Skip artifacts that are not sample-related
-            if current_name not in target_file.name:
-                continue
             for entry in parser_struct:
                 if lane_no == entry["Lane"]:
                     sample = entry["Sample"]

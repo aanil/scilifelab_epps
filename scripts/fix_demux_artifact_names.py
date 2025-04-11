@@ -49,10 +49,6 @@ def main(args: Namespace):
 
     pools = process.all_inputs()
     for pool in pools:
-        # Get sample-label mapping for the pool
-        logging.info(f"Getting sample-label mapping for pool '{pool.name}' ({pool.id})")
-        sample2label = get_pool_sample_label_mapping(pool)
-
         # Collect demux artifacts associated with pool
         demux_arts = []
         for art_tuple in process.input_output_maps:
@@ -62,43 +58,58 @@ def main(args: Namespace):
             ):
                 demux_arts.append(art_tuple[1]["uri"])
 
-        # Iterate across demux arts
-        for demux_art in demux_arts:
-            # Get reagent label
-            assert len(demux_art.reagent_labels) == 1, (
-                f"Demux artifact '{demux_art.name}' ({demux_art.id}) "
-                + " has multiple labels. That should not happen."
+        try:
+            logging.info(f"Checking pool '{pool.name}' ({pool.id}).")
+            for demux_art in demux_arts:
+                assert len(demux_art.samples) == 1
+            logging.info(f"Pool '{pool.name}' ({pool.id}) looks OK.")
+        except AssertionError:
+            logging.info(f"Pool '{pool.name}' ({pool.id}) needs fixing.")
+            logging.info(
+                f"Getting sample-label mapping for pool '{pool.name}' ({pool.id})"
             )
-            label = demux_art.reagent_labels[0]
+            sample2label = get_pool_sample_label_mapping(pool)
 
-            # Use sample-label mapping to find the "correct" sample name
-            correct_sample_name = None
-            for sample in demux_art.samples:
-                if sample.name in sample2label and sample2label[sample.name] == label:
-                    correct_sample_name = sample.name
-                    break
-            if correct_sample_name is None:
-                msg = (
-                    "Could not find correct sample name"
-                    + f" for demux artifact '{demux_art.name}' ({demux_art.id}) "
-                    + f" in pool {pool.id}. Skipping."
-                )
-                logging.error(msg)
-                continue
-
-            correct_demux_art_name = f"{correct_sample_name} (FASTQ reads)"
-            if correct_demux_art_name == demux_art.name:
-                logging.info(
+            # Iterate across demux arts
+            for demux_art in demux_arts:
+                # Get reagent label
+                assert len(demux_art.reagent_labels) == 1, (
                     f"Demux artifact '{demux_art.name}' ({demux_art.id}) "
-                    + "already has the correct name. Skipping."
+                    + " has multiple labels. That should not happen."
                 )
-                continue
-            else:
-                logging.info(
-                    f"Renaming '{demux_art.name}' ({demux_art.id}) -> '{correct_demux_art_name}'"
-                )
-                demux_art.name = correct_demux_art_name
-                demux_art.put()
+                label = demux_art.reagent_labels[0]
+
+                # Use sample-label mapping to find the "correct" sample name
+                correct_sample_name = None
+                for sample in demux_art.samples:
+                    if (
+                        sample.name in sample2label
+                        and sample2label[sample.name] == label
+                    ):
+                        correct_sample_name = sample.name
+                        break
+                if correct_sample_name is None:
+                    msg = (
+                        "Could not find correct sample name"
+                        + f" for demux artifact '{demux_art.name}' ({demux_art.id}) "
+                        + f" in pool {pool.id}. Skipping."
+                    )
+                    logging.error(msg)
+                    continue
+
+                correct_demux_art_name = f"{correct_sample_name} (FASTQ reads)"
+                if correct_demux_art_name == demux_art.name:
+                    logging.info(
+                        f"Demux artifact '{demux_art.name}' ({demux_art.id}) "
+                        + "already has the correct name. Skipping."
+                    )
+                    continue
+                else:
+                    logging.info(
+                        f"Renaming '{demux_art.name}' ({demux_art.id}) -> '{correct_demux_art_name}'"
+                    )
+                    demux_art.name = correct_demux_art_name
+                    demux_art.put()
 
 
 if __name__ == "__main__":
