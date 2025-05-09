@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250509.1
+
+Create project automation to apply sample antibodies from CSV to UDFs.
+
 ## 20250411.2
 
 Change SQL query for finding sample-label mappings in a pool to use pool artifact backtracking rather than using a submitted sample global query.
