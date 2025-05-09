@@ -1,8 +1,42 @@
 # Scilifelab_epps Version Log
 
-## 20250403.1
+## 20250509.1
 
 Create project automation to apply sample antibodies from CSV to UDFs.
+
+## 20250411.2
+
+Change SQL query for finding sample-label mappings in a pool to use pool artifact backtracking rather than using a submitted sample global query.
+
+## 20250411.1
+
+Introduce EPP for generic UDF calculations.
+
+## 20250410.3
+
+Change get_epp_user query to account for differet epp triggers
+
+## 20250410.2
+
+Patch last PR, don't include file slot artifacts in logic for parsing demux artifacts.
+
+## 20250410.1
+
+Introduce new EPP to fix bugged demux artifacts with multiple samples in the name by using sample-label linkage to identify the "correct" sample and rename the demux artifact accordingly.
+Demux EPP: Add logic block to handle demux artifacts being tied to multiple samples, in which case try to choose a single sample matching the name of the demux artifact.
+Utility function for mapping samples to labels in pool: Move into main module
+
+## 20250408.1
+
+Set up fall-back for get_epp_user() failing in wrapper.
+
+## 20250405.1
+
+Convert list of artifacts to set to get unique values to avoid repeating lines in running notes
+
+## 20250431.1
+
+Update EPP wrapper to send log messages to stdout.
 
 ## 20250328.1
 
