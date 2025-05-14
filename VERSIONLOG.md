@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250513.1
+
+Add barcode scan settings to Zika worklists.
+
 ## 20250509.1
 
 Create project automation to apply sample antibodies from CSV to UDFs.
