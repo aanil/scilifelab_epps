@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250602.1
+
+Add assertion for demux parsing to prevent multiple flowcells in step.
+
 ## 20250513.1
 
 Add barcode scan settings to Zika worklists.
