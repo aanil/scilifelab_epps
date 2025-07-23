@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250723.2
+
+Fix error trying to run json.dumps() on UDF dictionaries whose values are non-JSON-serializable by introducing custom encoder.
+
 ## 20250723.1
 
 Enable Zika for applications generic process.
