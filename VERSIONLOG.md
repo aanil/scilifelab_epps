@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250805.1
+
+Replace None with "" for writing N/A AVITI parameters to UDFs.
+
 ## 20250801.1
 
 Order pools by lane in running notes from sequencing
