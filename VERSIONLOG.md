@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250806.1
+
+Update and simplify ONT library parsing and MinKNOW samplesheet generation. Use single field for kit selection and retire QC/Anglerfish specific code.
+
 ## 20250805.1
 
 Replace None with "" for writing N/A AVITI parameters to UDFs.
