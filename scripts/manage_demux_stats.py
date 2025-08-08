@@ -293,7 +293,7 @@ def set_sample_values(demux_process, parser_struct, process_stats):
     )
     run_id = process_stats["Run ID"]
     if process_stats["Instrument"] == "NextSeq":
-        run_id = process_stats['Reagent Cartridge ID']
+        run_id = process_stats["Reagent Cartridge ID"]
     assert container_names[0] in run_id, (
         f"Flowcell name {container_names[0]} seems unrelated to run {run_id}"
     )
