@@ -4,7 +4,6 @@
 
 Add case for NextSeq in BCL Conversion and Demultiplexing
 
-
 ## 20250806.1
 
 Update and simplify ONT library parsing and MinKNOW samplesheet generation. Use single field for kit selection and retire QC/Anglerfish specific code.
