@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250813.1
+
+For samplesheet generation handle rare cases where we have a pool containing the same sample with different labels, see deviation #361.
+
 ## 20250808.1
 
 Add case for NextSeq in BCL Conversion and Demultiplexing
