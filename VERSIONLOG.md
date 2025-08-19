@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250819.1
+
+Add case for MiSeq in BCL Conversion and Demultiplexing
+
 ## 20250813.1
 
 For samplesheet generation handle rare cases where we have a pool containing the same sample with different labels, see deviation #361.
