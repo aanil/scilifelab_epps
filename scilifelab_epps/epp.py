@@ -569,6 +569,7 @@ def upload_file(
 
     if not matching_file_slots:
         msg = f"Found no matching file slots '{file_slot}' in process '{process.type.name}' ({process.id})."
+        logging.warning(msg)
 
         if remove:
             os.remove(file_path)
@@ -576,8 +577,6 @@ def upload_file(
 
         if fail_on_missing_file_slot:
             raise AssertionError(msg)
-        else:
-            logging.warning(msg)
 
     else:
         correct_file_slot: Artifact = matching_file_slots[0]
