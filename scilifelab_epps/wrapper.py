@@ -126,23 +126,25 @@ def epp_decorator(script_path: str, timestamp: str):
                     lims=lims,
                     remove=True,
                 )
-                log_upload_failed = True
-            except:
                 log_upload_failed = False
+            except:
+                log_upload_failed = True
 
             # Build final message
-            sentences = []
+            final_message_lines = []
             if script_exception:
-                sentences.append("Script failed.")
+                final_message_lines.append("Script failed.")
             else:
-                sentences.append("Script finished successfully.")
+                final_message_lines.append("Script finished successfully.")
             if errors_or_warnings_in_log:
-                sentences.append("Errors or warnings occurred, please check log.")
+                final_message_lines.append(
+                    "Errors or warnings occurred, please check log."
+                )
             if log_upload_failed:
-                sentences.append("Log upload failed.")
+                final_message_lines.append("Log upload failed.")
 
             # Post final message and exit
-            sys.stderr.write(" ".join(sentences))
+            sys.stderr.write(" ".join(final_message_lines))
             if errors_or_warnings_in_log:
                 sys.exit(1)
             else:
