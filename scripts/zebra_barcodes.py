@@ -154,20 +154,23 @@ def main(args):
 
     # Call label printer command
     logging.info("Calling command...")
-    lp_process = subprocess.Popen(
-        lp_args,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf8",
-    )
-    logging.info("Piping ZPL contents...")
-    lp_process.stdin.write(str("\n".join(zpl_code)))
-    stdout, stderr = lp_process.communicate()  # Will wait for subprocess to finish
-    logging.info(f"lp stdout: {stdout}")
-    logging.info(f"lp stderr: {stderr}")
-    logging.info("Command finished, closing subprocess.")
-    lp_process.stdin.close()
+    if not args.test:
+        lp_process = subprocess.Popen(
+            lp_args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf8",
+        )
+        logging.info("Piping ZPL contents...")
+        lp_process.stdin.write(str("\n".join(zpl_code)))
+        stdout, stderr = lp_process.communicate()  # Will wait for subprocess to finish
+        logging.info(f"lp stdout: {stdout}")
+        logging.info(f"lp stderr: {stderr}")
+        logging.info("Command finished, closing subprocess.")
+        lp_process.stdin.close()
+    else:
+        logging.info("Just kidding. This is a test run.")
 
     # Upload file with ZPL contents, will persist after finishing step, useful for re-prints and doing LIMS from home
     filename = f"barcodes_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}.txt"
@@ -186,6 +189,12 @@ if __name__ == "__main__":
     parser.add_argument("--pid", help="The process LIMS id.")
     parser.add_argument("--file", help="LIMS file slot name to use for barcode file.")
     parser.add_argument("--log", help="LIMS file slot name to use for log file.")
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        default=False,
+        help="Test run, surpress actual label printing.",
+    )
     args = parser.parse_args()
 
     main(args)
