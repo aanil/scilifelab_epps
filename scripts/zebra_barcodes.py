@@ -8,7 +8,8 @@ from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
 from genologics.lims import Lims
 
-from scilifelab_epps.wrapper import epp_decorator, upload_file
+from scilifelab_epps.epp import upload_file
+from scilifelab_epps.wrapper import epp_decorator
 
 TIMESTAMP = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
 

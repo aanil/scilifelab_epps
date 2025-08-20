@@ -92,7 +92,7 @@ def epp_decorator(script_path: str, timestamp: str):
 
             # Start logging
             if not epp_user:
-                logging.warning("No EPP user found for process ID {args.pid}.")
+                logging.warning(f"No EPP user found for process ID {args.pid}.")
             logging.info(
                 f"Script '{script_name}' started at {timestamp} by {(epp_user.name if epp_user else 'unknown')}."
             )
@@ -118,8 +118,8 @@ def epp_decorator(script_path: str, timestamp: str):
                     file_slot=args.log,
                     process=process,
                     lims=lims,
+                    remove=True,
                 )
-                os.remove(log_filename)
                 sys.stderr.write(str(e))
                 sys.exit(2)
 

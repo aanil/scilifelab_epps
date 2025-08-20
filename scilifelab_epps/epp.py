@@ -558,13 +558,25 @@ def upload_file(
     file_slot: str,
     process: Process,
     lims: Lims,
-    remove=False,
+    remove: bool = True,
 ):
-    for out in process.all_outputs():
-        if out.name == file_slot:
-            for f in out.files:
-                lims.request_session.delete(f.uri)
-            lims.upload_new_file(out, file_path)
+    matching_file_slots = [
+        output_artifact
+        for output_artifact in process.all_outputs()
+        if output_artifact.name == file_slot
+    ]
+
+    if not matching_file_slots:
+        msg = f"Found no matching file slots '{file_slot}' in process '{process.type.name}' ({process.id})."
+        logging.error(msg)
+        if remove:
+            os.remove(file_path)
+        raise AssertionError(msg)
+
+    file_slot = matching_file_slots[0]
+    for f in file_slot.files:
+        lims.request_session.delete(f.uri)
+    lims.upload_new_file(file_slot, file_path)
 
     logging.info(f"'{file_path}' uploaded to LIMS file slot '{file_slot}'.")
     if remove:
