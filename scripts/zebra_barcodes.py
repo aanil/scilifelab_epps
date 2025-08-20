@@ -1,18 +1,19 @@
 #!/usr/bin/env python
-import datetime
 import logging
 import subprocess
-import sys
 from argparse import ArgumentParser
+from datetime import datetime as dt
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
 from genologics.lims import Lims
 
-from scilifelab_epps.epp import EppLogger
+from scilifelab_epps.wrapper import epp_decorator, upload_file
+
+TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
 
 
-def makeContainerBarcode(plateid, copies=1):
+def make_container_label(plateid, copies=1):
     """Construct label with container id as human readable and barcode"""
     lines = []
     lines.append("^XA")  # start of label
@@ -24,7 +25,7 @@ def makeContainerBarcode(plateid, copies=1):
     # print text at position field origin (FO) rel. to home
     lines.append("^FO360,30^AFN 78,39^FN1^FS")
     # BC=barcode 128, field number 2, Normal orientation,
-    # height 70, no interpreation line.
+    # height 70, no interpretation line.
     lines.append("^FO70,10^BCN,70,N,N^FN2^FS")
     lines.append("^XZ")  # end format
 
@@ -38,7 +39,7 @@ def makeContainerBarcode(plateid, copies=1):
 
 
 def makeContainerNameBarcode(plate_name, copies=1):
-    """Constrcut label with container name as human readable"""
+    """Construct label with container name as human readable"""
     lines = []
     lines.append("^XA")  # start of label
     # download and store format, name of format,
@@ -116,134 +117,69 @@ def makeProcessNameBarcode(process_name, copies=1):
     return lines
 
 
-def getArgs():
-    desc = (
-        " Print barcodes on zebra barcode printer, "
-        " different label types available. Information "
-        " is fetched from Clarity LIMS."
-    )
-    parser = ArgumentParser(description=desc)
-    parser.add_argument(
-        "--container_id",
-        action="store_true",
-        help=(
-            "Print output container id label in both barcode format and human readable."
-        ),
-    )
-    parser.add_argument(
-        "--operator_and_date",
-        action="store_true",
-        help=("Print label with both operator and todays date."),
-    )
-    parser.add_argument(
-        "--container_name",
-        action="store_true",
-        help=("Print label with human readablecontainer name (user defined)"),
-    )
-    parser.add_argument(
-        "--process_name",
-        action="store_true",
-        help=("Print label with human readableprocess name"),
-    )
-    parser.add_argument(
-        "--copies",
-        default=1,
-        type=int,
-        help=(
-            "Number of printout copies, only used"
-            " if neither container_name nor container_id"
-            " type labels are printed. In that case, print"
-            " one label of each type for each container."
-        ),
-    )
-    parser.add_argument("--pid", help="The process LIMS id.")
-    parser.add_argument("--log", help="File name to use as log file")
-    parser.add_argument(
-        "--use_printer",
-        action="store_true",
-        help=("Print file on default or supplied printer using lp command."),
-    )
-    parser.add_argument("--hostname", help="Hostname for lp CUPS server.")
-    parser.add_argument("--destination", help="Name of printer.")
-    parser.add_argument(
-        "--no_prepend",
-        action="store_true",
-        help="Do not prepend old log, useful when ran locally",
-    )
-    return parser.parse_args()
+@epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
+def main(args):
+    lims = Lims(BASEURI, USERNAME, PASSWORD)
+    lims.check_version()
+    process = Process(lims, id=args.pid)
 
-
-def main(args, lims, epp_logger):
-    p = Process(lims, id=args.pid)
-    lines = []
-    cs = []
-    if args.container_id:
-        cs = p.output_containers()
-        for c in cs:
-            logging.info(f"Constructing barcode for container {c.id}.")
-            lines += makeContainerBarcode(c.id, copies=1)
-    if args.container_name:
-        cs = p.output_containers()
-        for c in cs:
-            logging.info(f"Constructing name label for container {c.id}.")
-            lines += makeContainerNameBarcode(c.name, copies=1)
-    if args.operator_and_date:
-        op = p.technician.name
-        date = str(datetime.date.today())
-        if cs:  # list of containers
-            copies = len(cs)
-        else:
-            copies = args.copies
-        lines += makeOperatorAndDateBarcode(op, date, copies=copies)
-    if args.process_name:
-        pn = p.type.name
-        if cs:  # list of containers
-            copies = len(cs)
-        else:
-            copies = args.copies
-        lines += makeProcessNameBarcode(pn, copies=copies)
-    if not (
-        args.container_id
-        or args.container_name
-        or args.operator_and_date
-        or args.process_name
-    ):
-        logging.info("No recognized label type given, exiting.")
-        sys.exit(-1)
-    if not args.use_printer:
-        logging.info("Writing to stdout.")
-        epp_logger.saved_stdout.write("\n".join(lines) + "\n")
-    elif lines:  # Avoid printing empty files
-        lp_args = ["lp"]
-        if args.hostname:
-            # remove that when all the calls to this script have been updated
-            if args.hostname == "homer.scilifelab.se:631":
-                args.hostname = "homer2.scilifelab.se:631"
-            lp_args += ["-h", args.hostname]
-        if args.destination:
-            lp_args += ["-d", args.destination]
-        lp_args.append("-")  # lp accepts stdin if '-' is given as filename
-        logging.info("Ready to call lp for printing.")
-        sp = subprocess.Popen(
-            lp_args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf8",
+    # Build a list of ZPL (=Zebra Programming Language) lines, corresponding to 4 labels per output container
+    zpl_code = []
+    for container in process.output_containers():
+        logging.info(
+            f"Making label for container ID with barcode: <barcode> {container.id}"
         )
-        sp.stdin.write(str("\n".join(lines)))
-        logging.info("lp command is called for printing.")
-        stdout, stderr = sp.communicate()  # Will wait for sp to finish
-        logging.info(f"lp stdout: {stdout}")
-        logging.info(f"lp stderr: {stderr}")
-        logging.info("lp command finished")
-        sp.stdin.close()
+        zpl_code += make_container_label(container.id)
+
+        logging.info(f"Making label for container ID: {container.id}.")
+        zpl_code += makeContainerNameBarcode(container.name)
+
+        logging.info(
+            f"Making label for operator and date: {process.technician.name} {str(dt.date.today())}"
+        )
+        zpl_code += makeOperatorAndDateBarcode(
+            process.technician.name, str(dt.date.today())
+        )
+
+        logging.info(f"Making label for step name: {process.type.name}")
+        zpl_code += makeProcessNameBarcode(process.type.name)
+
+    # Build args list to label printer command
+    lp_args = ["lp"]
+    lp_args += ["-h", "homer2.scilifelab.se:631"]
+    lp_args += ["-d", "zebrabarcode"]
+    lp_args.append("-")  # make lp command read from stdin
+
+    # Call label printer command
+    logging.info("Ready to call lp for printing.")
+    lp_process = subprocess.Popen(
+        lp_args,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf8",
+    )
+    lp_process.stdin.write(str("\n".join(zpl_code)))
+    logging.info("lp command is called for printing.")
+    stdout, stderr = lp_process.communicate()  # Will wait for subprocess to finish
+    logging.info(f"lp stdout: {stdout}")
+    logging.info(f"lp stderr: {stderr}")
+    logging.info("lp command finished")
+    lp_process.stdin.close()
+
+    # Upload barcode file (ZPL contents), will persist after finishing step, useful for re-prints and doing LIMS from home
+    filename = f"labels_{process.id}_{TIMESTAMP}.txt"
+    with open(filename, "w") as f:
+        f.write(str("\n".join(zpl_code)))
+
+    upload_file(filename, args.file, process, lims, remove=True)
 
 
 if __name__ == "__main__":
-    arguments = getArgs()
-    lims = Lims(BASEURI, USERNAME, PASSWORD)
-    lims.check_version()
-    prepend = not arguments.no_prepend
-    with EppLogger(arguments.log, lims=lims, prepend=prepend) as epp_logger:
-        main(arguments, lims, epp_logger)
+    parser = ArgumentParser()
+    parser.add_argument("--pid", help="The process LIMS id.")
+    parser.add_argument("--file", help="LIMS file slot name to use for barcode file.")
+    parser.add_argument("--log", help="LIMS file slot name to use for log file.")
+    args = parser.parse_args()
+
+    main(args)
