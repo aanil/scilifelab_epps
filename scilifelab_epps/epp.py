@@ -567,11 +567,11 @@ def upload_file(
     ]
 
     if not matching_file_slots:
-        msg = f"Found no matching file slots '{file_slot}' in process '{process.type.name}' ({process.id})."
-        logging.error(msg)
         if remove:
             os.remove(file_path)
-        raise AssertionError(msg)
+        raise AssertionError(
+            f"Found no matching file slots '{file_slot}' in process '{process.type.name}' ({process.id})."
+        )
 
     file_slot = matching_file_slots[0]
     for f in file_slot.files:

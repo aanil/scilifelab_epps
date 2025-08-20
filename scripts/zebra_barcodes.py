@@ -132,7 +132,7 @@ def main(args):
         )
         zpl_code += make_container_label(container.id)
 
-        logging.info(f"Making label for container ID: {container.id}.")
+        logging.info(f"Making label for container ID: {container.id}")
         zpl_code += makeContainerNameBarcode(container.name)
 
         logging.info(
