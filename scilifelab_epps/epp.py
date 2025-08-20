@@ -555,7 +555,7 @@ def traceback_to_step(
 
 def upload_file(
     file_path: str,
-    file_slot: str,
+    target_file_slot: str,
     process: Process,
     lims: Lims,
     remove: bool = True,
@@ -564,11 +564,11 @@ def upload_file(
     matching_file_slots = [
         output_artifact
         for output_artifact in process.all_outputs()
-        if output_artifact.name == file_slot
+        if output_artifact.name == target_file_slot
     ]
 
     if not matching_file_slots:
-        msg = f"Found no matching file slots '{file_slot.name}' in process '{process.type.name}' ({process.id})."
+        msg = f"Found no matching file slots '{target_file_slot}' in process '{process.type.name}' ({process.id})."
 
         if remove:
             os.remove(file_path)
