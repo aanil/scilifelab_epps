@@ -178,7 +178,9 @@ def main(args):
     with open(filename, "w") as f:
         f.write(str("\n".join(zpl_code)))
 
-    upload_file(filename, args.file, process, lims, remove=True)
+    upload_file(
+        filename, args.file, process, lims, remove=True, fail_on_missing_file_slot=False
+    )
 
 
 if __name__ == "__main__":

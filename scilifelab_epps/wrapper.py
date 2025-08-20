@@ -119,6 +119,7 @@ def epp_decorator(script_path: str, timestamp: str):
                     process=process,
                     lims=lims,
                     remove=True,
+                    fail_on_missing_file_slot=False,
                 )
                 sys.stderr.write(str(e))
                 sys.exit(2)
@@ -133,6 +134,7 @@ def epp_decorator(script_path: str, timestamp: str):
                     process=process,
                     lims=lims,
                     remove=True,
+                    fail_on_missing_file_slot=False,
                 )
                 # Check log for errors and warnings
                 if logger.errors_or_warnings:

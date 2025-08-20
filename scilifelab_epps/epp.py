@@ -559,6 +559,7 @@ def upload_file(
     process: Process,
     lims: Lims,
     remove: bool = True,
+    fail_on_missing_file_slot: bool = True,
 ):
     matching_file_slots = [
         output_artifact
@@ -567,21 +568,29 @@ def upload_file(
     ]
 
     if not matching_file_slots:
+        msg = f"Found no matching file slots '{file_slot.name}' in process '{process.type.name}' ({process.id})."
+
         if remove:
             os.remove(file_path)
-        raise AssertionError(
-            f"Found no matching file slots '{file_slot}' in process '{process.type.name}' ({process.id})."
+            logging.info(f"Removed local instance of '{file_path}'")
+
+        if fail_on_missing_file_slot:
+            raise AssertionError(msg)
+        else:
+            logging.warning(msg)
+
+    else:
+        file_slot = matching_file_slots[0]
+        for f in file_slot.files:
+            lims.request_session.delete(f.uri)
+        lims.upload_new_file(file_slot, file_path)
+
+        logging.info(
+            f"'{file_path}' uploaded to LIMS file slot '{file_slot.name}' ({file_slot.id})."
         )
-
-    file_slot = matching_file_slots[0]
-    for f in file_slot.files:
-        lims.request_session.delete(f.uri)
-    lims.upload_new_file(file_slot, file_path)
-
-    logging.info(f"'{file_path}' uploaded to LIMS file slot '{file_slot}'.")
-    if remove:
-        os.remove(file_path)
-        logging.info(f"'{file_path}' removed from local filesystem.")
+        if remove:
+            os.remove(file_path)
+            logging.info(f"Removed local instance of '{file_path}'")
 
 
 def get_pool_sample_label_mapping(pool: Artifact) -> dict[str, str]:
