@@ -1,8 +1,8 @@
 #!/usr/bin/env python
+import datetime
 import logging
 import subprocess
 from argparse import ArgumentParser
-from datetime import datetime as dt
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
@@ -10,7 +10,7 @@ from genologics.lims import Lims
 
 from scilifelab_epps.wrapper import epp_decorator, upload_file
 
-TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
+TIMESTAMP = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
 
 
 def make_container_label(plateid, copies=1):
@@ -135,23 +135,23 @@ def main(args):
         zpl_code += makeContainerNameBarcode(container.name)
 
         logging.info(
-            f"Making label for operator and date: {process.technician.name} {str(dt.date.today())}"
+            f"Making label for operator and date: {process.technician.name} {str(datetime.date.today())}"
         )
         zpl_code += makeOperatorAndDateBarcode(
-            process.technician.name, str(dt.date.today())
+            process.technician.name, str(datetime.date.today())
         )
 
         logging.info(f"Making label for step name: {process.type.name}")
         zpl_code += makeProcessNameBarcode(process.type.name)
 
-    logging.info(f"Full ZPL contents: {'\n'.join(zpl_code)}")
+    logging.info("Full ZPL contents:\n" + "\n".join(zpl_code))
 
     # Build args list to label printer command
     lp_args = ["lp"]
     lp_args += ["-h", "homer2.scilifelab.se:631"]
     lp_args += ["-d", "zebrabarcode"]
     lp_args.append("-")  # make lp command read from stdin
-    logging.info(f"Using command: {' '.join(lp_args)}")
+    logging.info(f"Using command: '{' '.join(lp_args)}'")
 
     # Call label printer command
     logging.info("Calling command...")
@@ -162,20 +162,20 @@ def main(args):
         stderr=subprocess.PIPE,
         encoding="utf8",
     )
-    lp_process.stdin.write("\n".join(zpl_code))
-    logging.info("Supplied ZPL contents.")
+    logging.info("Piping ZPL contents...")
+    lp_process.stdin.write(str("\n".join(zpl_code)))
     stdout, stderr = lp_process.communicate()  # Will wait for subprocess to finish
     logging.info(f"lp stdout: {stdout}")
     logging.info(f"lp stderr: {stderr}")
     logging.info("Command finished, closing subprocess.")
     lp_process.stdin.close()
 
-    # Upload barcode file (ZPL contents), will persist after finishing step, useful for re-prints and doing LIMS from home
-    filename = f"labels_{process.id}_{TIMESTAMP}.txt"
+    # Upload file with ZPL contents, will persist after finishing step, useful for re-prints and doing LIMS from home
+    filename = f"barcodes_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}.txt"
     logging.info(f"Uploading ZPL contents as {filename}")
 
     with open(filename, "w") as f:
-        f.write("\n".join(zpl_code))
+        f.write(str("\n".join(zpl_code)))
 
     upload_file(filename, args.file, process, lims, remove=True)
 
