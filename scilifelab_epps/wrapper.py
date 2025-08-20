@@ -127,7 +127,9 @@ def epp_decorator(script_path: str, timestamp: str):
             # On script success
             else:
                 logging.info("Script finished successfully. Uploading log file.")
+                errors_or_warnings = logger.errors_or_warnings
                 logging.shutdown()
+
                 upload_file(
                     file_path=log_filename,
                     file_slot=args.log,
@@ -137,7 +139,7 @@ def epp_decorator(script_path: str, timestamp: str):
                     fail_on_missing_file_slot=False,
                 )
                 # Check log for errors and warnings
-                if logger.errors_or_warnings:
+                if errors_or_warnings:
                     sys.stderr.write(
                         "Script finished successfully, but log contains errors or warnings, please have a look."
                     )
