@@ -555,7 +555,7 @@ def traceback_to_step(
 
 def upload_file(
     file_path: str,
-    target_file_slot: str,
+    file_slot: str,
     process: Process,
     lims: Lims,
     remove: bool = True,
@@ -564,11 +564,11 @@ def upload_file(
     matching_file_slots = [
         output_artifact
         for output_artifact in process.all_outputs()
-        if output_artifact.name == target_file_slot
+        if output_artifact.name == file_slot
     ]
 
     if not matching_file_slots:
-        msg = f"Found no matching file slots '{target_file_slot}' in process '{process.type.name}' ({process.id})."
+        msg = f"Found no matching file slots '{file_slot}' in process '{process.type.name}' ({process.id})."
 
         if remove:
             os.remove(file_path)
@@ -580,13 +580,13 @@ def upload_file(
             logging.warning(msg)
 
     else:
-        file_slot = matching_file_slots[0]
-        for f in file_slot.files:
+        correct_file_slot: Artifact = matching_file_slots[0]
+        for f in correct_file_slot.files:
             lims.request_session.delete(f.uri)
-        lims.upload_new_file(file_slot, file_path)
+        lims.upload_new_file(correct_file_slot, file_path)
 
         logging.info(
-            f"'{file_path}' uploaded to LIMS file slot '{file_slot.name}' ({file_slot.id})."
+            f"'{file_path}' uploaded to LIMS file slot '{correct_file_slot.name}' ({correct_file_slot.id})."
         )
         if remove:
             os.remove(file_path)
