@@ -144,14 +144,17 @@ def main(args):
         logging.info(f"Making label for step name: {process.type.name}")
         zpl_code += makeProcessNameBarcode(process.type.name)
 
+    logging.info(f"Full ZPL contents: {'\n'.join(zpl_code)}")
+
     # Build args list to label printer command
     lp_args = ["lp"]
     lp_args += ["-h", "homer2.scilifelab.se:631"]
     lp_args += ["-d", "zebrabarcode"]
     lp_args.append("-")  # make lp command read from stdin
+    logging.info(f"Using command: {' '.join(lp_args)}")
 
     # Call label printer command
-    logging.info("Ready to call lp for printing.")
+    logging.info("Calling command...")
     lp_process = subprocess.Popen(
         lp_args,
         stdin=subprocess.PIPE,
@@ -159,18 +162,20 @@ def main(args):
         stderr=subprocess.PIPE,
         encoding="utf8",
     )
-    lp_process.stdin.write(str("\n".join(zpl_code)))
-    logging.info("lp command is called for printing.")
+    lp_process.stdin.write("\n".join(zpl_code))
+    logging.info("Supplied ZPL contents.")
     stdout, stderr = lp_process.communicate()  # Will wait for subprocess to finish
     logging.info(f"lp stdout: {stdout}")
     logging.info(f"lp stderr: {stderr}")
-    logging.info("lp command finished")
+    logging.info("Command finished, closing subprocess.")
     lp_process.stdin.close()
 
     # Upload barcode file (ZPL contents), will persist after finishing step, useful for re-prints and doing LIMS from home
     filename = f"labels_{process.id}_{TIMESTAMP}.txt"
+    logging.info(f"Uploading ZPL contents as {filename}")
+
     with open(filename, "w") as f:
-        f.write(str("\n".join(zpl_code)))
+        f.write("\n".join(zpl_code))
 
     upload_file(filename, args.file, process, lims, remove=True)
 
