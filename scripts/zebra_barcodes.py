@@ -145,8 +145,6 @@ def main(args):
         logging.info(f"Making label for step name: {process.type.name}")
         zpl_code += makeProcessNameBarcode(process.type.name)
 
-    logging.info("Full ZPL contents:\n" + "\n".join(zpl_code))
-
     # Build args list to label printer command
     lp_args = ["lp"]
     lp_args += ["-h", "homer2.scilifelab.se:631"]
