@@ -193,7 +193,7 @@ if __name__ == "__main__":
         "--test",
         action="store_true",
         default=False,
-        help="Test run, surpress actual label printing.",
+        help="Test run, suppress actual label printing.",
     )
     args = parser.parse_args()
 
