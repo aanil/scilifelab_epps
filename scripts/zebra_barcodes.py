@@ -18,6 +18,8 @@ def build_zpl_format(format_lines, data_lines, copies=1):
     """Helper to build ZPL format and data for a label."""
     lines = []
     lines.append("^XA")  # Start format definition
+    lines.append("^DFFORMAT^FS")  # Delete previous format named FORMAT
+    lines.append("^LH0,0")  # Set label home position
     lines.extend(format_lines)  # Add format (layout) commands
     lines.append("^XZ")  # End format definition
     for _ in range(copies):
@@ -31,8 +33,6 @@ def build_zpl_format(format_lines, data_lines, copies=1):
 def make_container_label(plateid, copies=1):
     """Construct label with container id as human readable and barcode"""
     format_lines = [
-        "^DFFORMAT^FS",  # Delete previous format named FORMAT
-        "^LH0,0",  # Set label home position
         "^FO360,30^AFN 78,39^FN1^FS",  # Field origin, font, field number 1 (human readable)
         "^FO70,10^BCN,70,N,N^FN2^FS",  # Field origin, barcode, field number 2 (barcode)
     ]
@@ -45,10 +45,7 @@ def make_container_label(plateid, copies=1):
 
 def makeContainerNameBarcode(plate_name, copies=1):
     """Construct label with container name as human readable"""
-    format_lines = [
-        "^DFFORMAT^FS",  # Delete previous format named FORMAT
-        "^LH0,0",  # Set label home position
-    ]
+    format_lines = []
     # Adjust font size and position based on name length
     if len(plate_name) > 21:
         format_lines.append("^FO20,40^AFN 54,30^FN1^FS")  # Smaller font for long names
@@ -63,8 +60,6 @@ def makeContainerNameBarcode(plate_name, copies=1):
 def makeOperatorAndDateBarcode(operator, date, copies=1):
     """Construct label with operator name and date in human readable format"""
     format_lines = [
-        "^DFFORMAT^FS",  # Delete previous format named FORMAT
-        "^LH0,0",  # Set label home position
         "^FO420,35^ADN,36,20^FN1^FS",  # Field for date (right side)
         "^FO20,35^ADN,36,20^FN2^FS",  # Field for operator (left side)
     ]
@@ -79,10 +74,7 @@ def makeOperatorAndDateBarcode(operator, date, copies=1):
 
 def makeProcessNameBarcode(process_name, copies=1):
     """Construct label with process name as human readable"""
-    format_lines = [
-        "^DFFORMAT^FS",  # Delete previous format named FORMAT
-        "^LH0,0",  # Set label home position
-    ]
+    format_lines = []
     # Adjust font size and position based on process name length
     if len(process_name) > 21:
         format_lines.append("^FO20,40^ADN 54,30^FN1^FS")  # Smaller font for long names
