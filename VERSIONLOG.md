@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250821.1
+
+Bugfix VC100 parsing script. File contents are loaded as string straight away.
+
 ## 20250819.1
 
 Add case for MiSeq in BCL Conversion and Demultiplexing
