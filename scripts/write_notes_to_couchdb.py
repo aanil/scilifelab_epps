@@ -6,6 +6,7 @@ import json
 import os
 import smtplib
 import sys
+from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any, Optional
@@ -104,14 +105,19 @@ def email_responsible(
     subject: Optional[str] = None,
     html: Optional[str] = None,
 ) -> None:
+    msg: Message
     if error:
         body = "Error: " + message
         body += "\n\n--\nThis is an automatically generated error notification"
         msg = MIMEText(body)
-        msg["Subject"] = "[Error] Running note sync error from LIMS to Statusdb"
+        msg["Subject"] = "[Error] Running note sync error from LIMS to Genomics Status"
     else:
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
+        msg["Subject"] = (
+            subject
+            if subject
+            else "Running note sync info from LIMS to Genomics Status"
+        )
 
         msg.attach(MIMEText(message, "plain"))
         if html:
@@ -120,6 +126,5 @@ def email_responsible(
     msg["From"] = "Lims_monitor"
     msg["To"] = resp_email
 
-    s = smtplib.SMTP("localhost")
-    s.sendmail("genologics-lims@scilifelab.se", msg["To"], msg.as_string())
-    s.quit()
+    with smtplib.SMTP("localhost") as s:
+        s.sendmail("genologics-lims@scilifelab.se", msg["To"], msg.as_string())
