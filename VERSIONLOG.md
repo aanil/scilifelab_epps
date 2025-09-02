@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250902.1
+
+Use JWT tokens to call Genomics Status API to create running notes instead to writing directly to the backend
+
 ## 20250808.1
 
 Add case for NextSeq in BCL Conversion and Demultiplexing
