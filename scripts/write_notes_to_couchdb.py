@@ -58,7 +58,6 @@ def write_note_to_couch(pid: str, note: dict[str, Any], lims: str) -> None:
         pid: Project ID
         note: Dictionary containing note data with keys:
                 - note: The content of the note
-                - user: Name of the user adding the note
                 - email: Email of the user adding the note
                 - categories: List of note categories for the note
                 - note_type: Type of the note (e.g., 'project')

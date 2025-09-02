@@ -187,7 +187,6 @@ def main(lims, args):
             comments,
         )
         noteobj["note"] = note
-        noteobj["user"] = f"{pro.technician.first_name} {pro.technician.last_name}"
         noteobj["email"] = pro.technician.email
         noteobj["categories"] = [categorization(pro.type.name)]
         noteobj["note_type"] = "project"

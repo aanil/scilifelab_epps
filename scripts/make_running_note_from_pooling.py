@@ -18,7 +18,6 @@ def main(lims, args):
     log = []
     datamap = {}
     wsname = None
-    username = f"{p.technician.first_name} {p.technician.last_name}"
     user_email = p.technician.email
     for art in p.all_inputs():
         if len(art.samples) != 1:
@@ -47,7 +46,6 @@ def main(lims, args):
 
         running_note = {}
         running_note["note"] = rnt
-        running_note["user"] = username
         running_note["email"] = user_email
         running_note["categories"] = ["Workset"]
         running_note["note_type"] = "project"

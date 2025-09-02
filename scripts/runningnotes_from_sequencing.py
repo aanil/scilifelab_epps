@@ -110,7 +110,6 @@ def main(args):
         note_obj = {
             "categories": ["Lab"],
             "note_type": "project",
-            "user": epp_initiator.name,
             "email": epp_initiator.email,
             "note": note,
         }
