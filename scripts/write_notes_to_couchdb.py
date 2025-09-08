@@ -75,9 +75,7 @@ def write_note_to_couch(pid: str, note: dict[str, Any], lims: str) -> None:
             "genomics-bioinfo@scilifelab.se",
         )
         email_responsible(
-            "Running note save for {} failed on LIMS! Please contact {} to resolve the issue!".format(
-                pid, "genomics-bioinfo@scilifelab.se"
-            ),
+            f"Running note save for {pid} failed on LIMS! Please contact genomics-bioinfo@scilifelab.se to resolve the issue!",
             note["email"],
         )
         sys.exit(2)
@@ -89,10 +87,8 @@ def write_note_to_couch(pid: str, note: dict[str, Any], lims: str) -> None:
         headers={"Authorization": f"Bearer {signed_jwt}"},
         json=note,
     )
-    if result.status_code != 200:
-        msg = "Running note save failed from {} to {} for {}".format(
-            lims, config["statusdb"].get("url"), pid
-        )
+    if result.status_code != 201:
+        msg = f"Running note save failed from {lims} to {config['genomics-status-url']} for {pid}"
         for user_email in ["genomics-bioinfo@scilifelab.se", note["email"]]:
             email_responsible(msg, user_email)
 
