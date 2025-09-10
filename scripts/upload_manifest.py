@@ -1,6 +1,26 @@
 #!/usr/bin/env python
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
+from datetime import datetime as dt
+
+from genologics.config import BASEURI, PASSWORD, USERNAME
+from genologics.entities import Process
+from genologics.lims import Lims
+
+from scilifelab_epps.wrapper import epp_decorator
+
+TIMESTAMP = dt.now().strftime("%y%m%d_%H%M%S")
+
+
+@epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
+def main(args: Namespace):
+    lims = Lims(BASEURI, USERNAME, PASSWORD)
+    process = Process(lims, id=args.pid)
+
+    message = f"I am perfct {process.type.name}"
+    process.udf["Method Document"] = 1
+    process.put()
+    print(message)
 
 
 if __name__ == "__main__":
