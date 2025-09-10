@@ -18,8 +18,6 @@ def main(args: Namespace):
     process = Process(lims, id=args.pid)
 
     message = f"I am perfct {process.type.name}"
-    process.udf["Method Document"] = 1
-    process.put()
     print(message)
 
 
