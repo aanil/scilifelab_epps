@@ -36,26 +36,30 @@ def get_flowcell_id(process: Process) -> str:
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
 def main(args: Namespace):
+    """takes a uploaded manifest from the LIMS process, zips the file and puts the re-names zip file on ngi-nas-ns"""
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
 
+    # identify the correct file slot to take the manually uploaded manifest from
     matching_file_slots = [
         art
         for art in process.all_outputs()
         if art.name == args.file and art.type == "ResultFile"
     ]
-
     assert (
         len(matching_file_slots) == 1
     ), f"Could not find single file slot matching to '{args.file}'."
+
     matching_file_slot = matching_file_slots[0]
     assert matching_file_slot.files, f"'{matching_file_slot.name}' file slot is empty."
+
+    # identify original file name and content
     manifest_file_name = matching_file_slot.files[0].original_location
     file_id = matching_file_slot.files[0].id
     manifest_file_contents = lims.get_file_contents(id=file_id)
     manifest_file_contents_list = manifest_file_contents.split("\n")
 
-    # for line in manifest_file_contents_list:
+    # add information of old filename to manifest
     for keyname_index, line in enumerate(manifest_file_contents_list):
         if "KeyName" in line and "Value" in line:
             break
@@ -64,7 +68,6 @@ def main(args: Namespace):
     )
     manifest_file_contents_altered = "\n".join(manifest_file_contents_list)
 
-    # Write and zip manifest(s)
     flowcell_id = get_flowcell_id(process)
 
     # check whether we are in an AVITI LIMS step
@@ -77,10 +80,12 @@ def main(args: Namespace):
             f"LIMS step is not part of the  Aviti protocol. This is not implemented for other protocols (yet)"
         )
 
+    # generate new file names
     new_root_manifest_file_name = f"AVITI_run_manifest_{flowcell_id}_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}"
     new_manifest_csv_file_name = f"{new_root_manifest_file_name}.csv"
     new_manifest_zip_file_name = f"{new_root_manifest_file_name}.zip"
 
+    # Write and zip manifest(s)
     with ZipFile(new_manifest_zip_file_name, "w") as zip_stream:
         open(new_manifest_csv_file_name, "w").write(manifest_file_contents_altered)
         zip_stream.write(new_manifest_csv_file_name)
