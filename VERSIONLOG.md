@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250911.1
+
+Fix MinKNOW samplesheet bug where file is deleted before it can be moved to ngi-nas-ns.
+
 ## 20250905.1
 
 Make AVITI run manifest EPP accept noIndex cases.
