@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250911.1
+
+Add EPP to upload AVITI manifests to ngi-nas-ns that have been manually uploaded to LIMS.
+
 ## 20250905.1
 
 Make AVITI run manifest EPP accept noIndex cases.
