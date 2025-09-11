@@ -5,6 +5,7 @@ from datetime import datetime as dt
 from zipfile import ZipFile
 import os
 import logging
+import shutil
 
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
@@ -65,6 +66,17 @@ def main(args: Namespace):
 
     # Write and zip manifest(s)
     flowcell_id = get_flowcell_id(process)
+
+    # check whether we are in an AVITI LIMS step
+    if "AVITI" in process.type.name.upper():
+        samplesheet_type = "Aviti"
+        # samplesheet_type needs to be spelled exactly like the sequencer directories in ngi-nas-ns
+    else:
+        # TODO: implement for other sequencers
+        raise AssertionError(
+            f"LIMS step is not part of the  Aviti protocol. This is not implemented for other protocols (yet)"
+        )
+
     new_root_manifest_file_name = f"AVITI_run_manifest_{flowcell_id}_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}"
     new_manifest_csv_file_name = f"{new_root_manifest_file_name}.csv"
     new_manifest_zip_file_name = f"{new_root_manifest_file_name}.zip"
@@ -76,6 +88,23 @@ def main(args: Namespace):
     logging.info(
         f".csv file '{manifest_file_name}' has been saved as .zip file '{new_manifest_zip_file_name}'"
     )
+
+    # Move manifest(s)
+    logging.info("Moving run manifest to ngi-nas-ns...")
+    try:
+        dst = f"/srv/ngi-nas-ns/samplesheets/{samplesheet_type}/{dt.now().year}"
+        if not os.path.exists(dst):
+            logging.info(f"Happy new year! Creating {dst}")
+            os.mkdir(dst)
+        shutil.copyfile(
+            new_manifest_zip_file_name,
+            f"{dst}/{new_manifest_zip_file_name}",
+        )
+        os.remove(new_manifest_zip_file_name)
+    except:
+        logging.error("Failed to move run manifest to ngi-nas-ns.", exc_info=True)
+    else:
+        logging.info("Run manifest moved to ngi-nas-ns.")
 
 
 if __name__ == "__main__":
