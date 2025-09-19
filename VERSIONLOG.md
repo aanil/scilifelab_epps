@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20250919.1
+
+Remove unused calc_from_args.py script and associated modules.
+
 ## 20250911.1
 
 Fix MinKNOW samplesheet bug where file is deleted before it can be moved to ngi-nas-ns.
