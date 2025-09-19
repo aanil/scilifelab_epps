@@ -2,7 +2,7 @@
 
 ## 20250919.1
 
-Remove unused calc_from_args.py and parse_anglerfish_results.py scripts and associated modules.
+Remove unused scripts and associated modules.
 
 ## 20250911.1
 
