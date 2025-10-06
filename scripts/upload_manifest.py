@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
+import logging
+import os
+import shutil
 from argparse import ArgumentParser, Namespace
 from datetime import datetime as dt
 from zipfile import ZipFile
-import os
-import logging
-import shutil
-
 
 from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
@@ -46,9 +45,9 @@ def main(args: Namespace):
         for art in process.all_outputs()
         if art.name == args.file and art.type == "ResultFile"
     ]
-    assert (
-        len(matching_file_slots) == 1
-    ), f"Could not find single file slot matching to '{args.file}'."
+    assert len(matching_file_slots) == 1, (
+        f"Could not find single file slot matching to '{args.file}'."
+    )
 
     matching_file_slot = matching_file_slots[0]
     assert matching_file_slot.files, f"'{matching_file_slot.name}' file slot is empty."
