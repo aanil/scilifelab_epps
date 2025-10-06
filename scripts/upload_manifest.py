@@ -35,7 +35,7 @@ def get_flowcell_id(process: Process) -> str:
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
 def main(args: Namespace):
-    """takes a uploaded manifest from the LIMS process, zips the file and puts the re-names zip file on ngi-nas-ns"""
+    """takes a uploaded manifest from the LIMS process, zips the file and puts the re-named zip file on ngi-nas-ns"""
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     process = Process(lims, id=args.pid)
 
