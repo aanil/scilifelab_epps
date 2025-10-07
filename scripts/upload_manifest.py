@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import io
 import logging
 import os
 import shutil
@@ -86,9 +87,7 @@ def main(args: Namespace):
 
     # Write and zip manifest(s)
     with ZipFile(new_manifest_zip_file_name, "w") as zip_stream:
-        open(new_manifest_csv_file_name, "w").write(manifest_file_contents_altered)
-        zip_stream.write(new_manifest_csv_file_name)
-        os.remove(new_manifest_csv_file_name)
+        zip_stream.writestr(new_manifest_csv_file_name, manifest_file_contents_altered)
     logging.info(
         f".csv file '{manifest_file_name}' has been saved as .zip file '{new_manifest_zip_file_name}'"
     )
