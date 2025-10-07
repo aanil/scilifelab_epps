@@ -1,8 +1,16 @@
 # Scilifelab_epps Version Log
 
-## 20250911.1
+## 20251007.1
 
 Add EPP to upload AVITI manifests to ngi-nas-ns that have been manually uploaded to LIMS.
+
+## 20250919.1
+
+Remove unused scripts and associated modules.
+
+## 20250911.1
+
+Fix MinKNOW samplesheet bug where file is deleted before it can be moved to ngi-nas-ns.
 
 ## 20250905.1
 
