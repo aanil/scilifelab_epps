@@ -76,7 +76,7 @@ def main(args: Namespace):
     else:
         # TODO: implement for other sequencers
         raise AssertionError(
-            f"LIMS step is not part of the  Aviti protocol. This is not implemented for other protocols (yet)"
+            "LIMS step is not part of the  Aviti protocol. This is not implemented for other protocols (yet)"
         )
 
     # generate new file names
