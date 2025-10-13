@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20251013.1
+
+Update EPP for uploading AVITI manifest to manifest processable by TACA.
+
 ## 20251007.1
 
 Add EPP to upload AVITI manifests to ngi-nas-ns that have been manually uploaded to LIMS.
