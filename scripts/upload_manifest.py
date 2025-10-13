@@ -63,7 +63,7 @@ def main(args: Namespace):
         if "KeyName" in line and "Value" in line:
             break
     manifest_file_contents_list.insert(
-        keyname_index + 1, f"copy from original file,{manifest_file_name}"
+        keyname_index + 1, f"copy_from_original_file,{manifest_file_name}"
     )
     manifest_file_contents_altered = "\n".join(manifest_file_contents_list)
 
@@ -80,7 +80,7 @@ def main(args: Namespace):
         )
 
     # generate new file names
-    new_root_manifest_file_name = f"AVITI_run_manifest_{flowcell_id}_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}"
+    new_root_manifest_file_name = f"AVITI_run_manifest_{flowcell_id}_{process.id}_{TIMESTAMP}_{process.technician.name.replace(' ', '')}_untrimmed"
     new_manifest_csv_file_name = f"{new_root_manifest_file_name}.csv"
     new_manifest_zip_file_name = f"{new_root_manifest_file_name}.zip"
 
