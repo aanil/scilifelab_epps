@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20251021.1
+
+Update EPP for parsing Run information to LIMS by correcting the path to the metadata on Preproc.
+
 ## 20251013.1
 
 Update EPP for uploading AVITI manifest to manifest processable by TACA.
