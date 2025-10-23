@@ -89,7 +89,7 @@ def udfs_matches_run_name(art: Artifact) -> bool:
 def get_matching_db_rows(
     art: Artifact,
     process: Process,
-    view: tuple[str, str],
+    view: tuple[str, str, str],
     run_name: str | None,
     client: cloudant_v1.CloudantV1,
 ) -> list[dict]:
@@ -210,8 +210,6 @@ def sync_runs_to_db(process: Process, args: Namespace, lims: Lims):
     arts_successful = []
 
     client, nanopore_runs_db = get_ONT_db()
-    client: cloudant_v1.CloudantV1
-    nanopore_runs_db: str
 
     db_view: tuple = (nanopore_runs_db, "info", "all_stats")
 
@@ -235,7 +233,7 @@ def sync_runs_to_db(process: Process, args: Namespace, lims: Lims):
             continue
 
         elif len(matching_rows) > 1:
-            matching_run_names = [row.key for row in matching_rows]
+            matching_run_names = [row["key"] for row in matching_rows]
             logging.warning("Query was found in multiple instances in the database: ")
             for matching_run_name in matching_run_names:
                 logging.warning(f"Matching run name: '{matching_run_name}'.")

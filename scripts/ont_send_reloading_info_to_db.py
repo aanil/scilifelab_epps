@@ -38,8 +38,6 @@ def send_reloading_info_to_db(process: Process):
             runs.append(run)
 
     client, db_name = get_ONT_db()
-    client: cloudant_v1.CloudantV1
-    db_name: str
 
     view: dict = client.post_view(
         db=db_name,
