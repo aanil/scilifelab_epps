@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20251023.1
+
+Update ONT EPPs to use cloudant instead of couchdb
+
 ## 20251021.1
 
 Update EPP for parsing Run information to LIMS by correcting the path to the metadata on Preproc.
