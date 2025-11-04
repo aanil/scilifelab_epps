@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20251104.1
+
+Update EPP for generating ONT samplesheets so that periods in the kitname are replaced by dashes.
+
 ## 20251023.1
 
 Update EPP for that manages and imports demux stats to LIMS by correcting the path to the metadata on Preproc.
