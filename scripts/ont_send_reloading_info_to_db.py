@@ -173,7 +173,7 @@ def get_ONT_db() -> tuple[cloudant_v1.CloudantV1, str]:
             config["statusdb"].get("username"), config["statusdb"].get("password")
         )
     )
-    cloudant.set_service_url(config["statusdb"].get("url"))
+    cloudant.set_service_url(f"https://{config['statusdb'].get('url')}")
 
     return (cloudant, "nanopore_runs")
 
