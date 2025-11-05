@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20251023.2
+
+Update ONT EPPs to use cloudant instead of couchdb
+
 ## 20251023.1
 
 Update EPP for that manages and imports demux stats to LIMS by correcting the path to the metadata on Preproc.
