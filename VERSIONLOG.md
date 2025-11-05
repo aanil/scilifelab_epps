@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20251104.1
+
+Update EPP for generating ONT samplesheets so that periods in the kitname are replaced by dashes.
+
 ## 20251023.2
 
 Update ONT EPPs to use cloudant instead of couchdb
