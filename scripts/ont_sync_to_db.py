@@ -187,7 +187,7 @@ def write_to_doc(
         doc["lims"]["loading"] = []
     doc["lims"]["loading"].append(dict_to_add)
 
-    client.put_document(db=db, doc_id=doc["id"], document=doc).get_result()
+    client.put_document(db=db, doc_id=doc["_id"], document=doc).get_result()
 
 
 def sync_runs_to_db(process: Process, args: Namespace, lims: Lims):
