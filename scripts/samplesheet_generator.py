@@ -577,13 +577,13 @@ def find_barcode(sample_idxs, sample, process):
                     find_barcode(sample_idxs, sample, art.parent_process)
 
 
-def upload_to_genstat(data, metadata, fc_name):
+def upload_to_genstat(data, metadata, fc_name, lims_uri):
     config_genstat = "~/config/genstat-conf.yaml"
     with open(os.path.expanduser(config_genstat)) as config_file:
         config: dict[str, Any] = yaml.safe_load(config_file)
     if not config["samplesheet_key"]:
         email_responsible(
-            f"Genomics status token credentials not found in {lims}\n Samplesheet upload for {fc_name} failed on LIMS! Please contact genomics-bioinfo@scilifelab.se to resolve the issue!",
+            f"Genomics status token credentials not found in {lims_uri}\n Samplesheet upload for {fc_name} failed on LIMS! Please contact genomics-bioinfo@scilifelab.se to resolve the issue!",
             "genomics-bioinfo@scilifelab.se",
         )
         sys.exit(2)
@@ -599,7 +599,7 @@ def upload_to_genstat(data, metadata, fc_name):
     )
 
     if result.status_code != 201:
-        msg = f"Samplesheet upload failed from {lims} to {config['genomics-status-url']} for {fc_name}"
+        msg = f"Samplesheet upload failed from {lims_uri} to {config['genomics-status-url']} for {fc_name}"
         msg += f"\nStatus code: {result.status_code}\nResponse: {result.text}\n"
         email_responsible(msg, "genomics-bioinfo@scilifelab.se")
 
@@ -742,7 +742,7 @@ def main(lims, args):
             }
             # Check that content exists to upload obj
             if content:
-                upload_to_genstat(obj, metadata, fc_name)
+                upload_to_genstat(obj, metadata, fc_name, lims.baseuri)
             for f in ss_art.files:
                 lims.request_session.delete(f.uri)
             lims.upload_new_file(ss_art, f"{fc_name}.csv")
