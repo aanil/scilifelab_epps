@@ -594,11 +594,17 @@ def upload_to_genstat(data, metadata, fc_name, lims_uri):
     genstat_sample_info_url = (
         f"{config['genomics-status-url']}/api/v1/demux_sample_info/{fc_name}"
     )
-    result: requests.Response = requests.post(
-        genstat_sample_info_url,
-        headers={"Authorization": f"Bearer {signed_jwt}"},
-        json={"uploaded_lims_info": data, "metadata": metadata},
-    )
+    try:
+        result: requests.Response = requests.post(
+            genstat_sample_info_url,
+            headers={"Authorization": f"Bearer {signed_jwt}"},
+            json={"uploaded_lims_info": data, "metadata": metadata},
+        )
+    except Exception as e:
+        email_responsible(
+            f"Failed to upload samplesheet for {fc_name} to Genomics Status: {e}",
+            "genomics-bioinfo@scilifelab.se",
+        )
 
     if result.status_code != 201:
         msg = f"Samplesheet upload failed from {lims_uri} to {config['genomics-status-url']} for {fc_name}"
