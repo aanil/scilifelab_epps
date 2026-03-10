@@ -471,6 +471,7 @@ def gen_Nextseq_lane_data(pro):
                         sp_obj["sample_project"] = sample.project.name.replace(
                             ".", "__"
                         ).replace(",", "")
+                        sp_obj["description"] = sp_obj["sample_project"]
                         sp_obj["sample_ref"] = sample.project.udf.get(
                             "Reference genome", ""
                         ).replace(",", "")
@@ -497,6 +498,7 @@ def gen_Nextseq_lane_data(pro):
                             .replace(" ", "_")
                         )
                         sp_obj["sample_project"] = "Control"
+                        sp_obj["description"] = "Control"
                         sp_obj["sample_ref"] = "Control"
                         sp_obj["rc"] = "0-0"
                         sp_obj["recipe"] = "0-0-0-0"
@@ -525,7 +527,7 @@ def gen_Nextseq_lane_data(pro):
             line["sample_ref"],
             line["index_1"],
             line["index_2"],
-            line["sample_project"],
+            line["description"],
             line["control"],
             line["rc"],
             line["operator"],
