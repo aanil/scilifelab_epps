@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20260318.1
+
+Fix:Add Miseq i100 for readcount and remove document version check for index distance and placement check.
+
 ## 20260211.1
 
 Enable the integration of MiSeq i100 into LIMS
