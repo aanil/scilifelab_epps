@@ -214,4 +214,4 @@ if __name__ == "__main__":
 
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     lims.check_version()
-    main(lims, args.pid)
+    main(lims, args.pid, args.auto)
