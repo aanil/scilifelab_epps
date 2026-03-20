@@ -2,14 +2,18 @@
 
 import re
 import sys
+import warnings
 from argparse import ArgumentParser
 from io import BytesIO
 
+import psycopg2
 import yaml
 from genologics.config import BASEURI, PASSWORD, USERNAME
-from genologics.entities import Project
+from genologics.entities import File, Project
 from genologics.lims import Lims
 from openpyxl import load_workbook
+
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
 with open("/opt/gls/clarity/users/glsai/config/genosqlrc.yaml") as f:
     config = yaml.safe_load(f)
@@ -55,6 +59,8 @@ def parse_libary_info_sheet(worksheet, proj_id):
         min_row=20, min_col=13, max_col=16, values_only=True
     ):
         sample_name = row[0]
+        if sample_name is None:
+            continue
         message.update(verify_samplename(sample_name, proj_id))
         well = row[1]
         index = row[3]
@@ -159,13 +165,34 @@ def parse_libary_info_sheet(worksheet, proj_id):
 
 
 def main(lims, pid, auto):
-    message = []
+    message = set()
     project = Project(lims, id=pid)
-    try:
-        samplesheet_file = project.files[0]
-    except IndexError:
+    if not project.files:
         sys.stderr.write("No samplesheet file found for the project.\n")
         sys.exit(1)
+    if len(project.files) == 1:
+        samplesheet_file = project.files[0]
+    else:
+        message.add("Multiple files found for the project, choosing the latest one.\n")
+        luids = [f.id for f in project.files]
+        # Query files with given luids to get the latest one
+        query = (
+            "select luid from glsfile "
+            f"where luid in {tuple(luids)}"
+            "order by createddate desc limit 1;"
+        )
+        with psycopg2.connect(
+            user=config["username"],
+            host=config["url"],
+            database=config["db"],
+            password=config["password"],
+        ) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                query_output = cursor.fetchall()
+                samplesheet_file = File(
+                    lims, uri=BASEURI + "/api/v2/files/" + query_output[0][0]
+                )
 
     stream = lims.get_file_contents(uri=samplesheet_file.uri)
     data = stream.read()
@@ -178,7 +205,8 @@ def main(lims, pid, auto):
     # sample_information = 'Sample_information' in list(worksheet.iter_rows(min_row=4, max_row=4, values_only=True))[0][8]
 
     if library_information:
-        data, message = parse_libary_info_sheet(worksheet, pid)
+        data, lib_info_message = parse_libary_info_sheet(worksheet, pid)
+        message.update(lib_info_message)
     if message:
         if auto:
             print(
