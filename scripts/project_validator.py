@@ -6,10 +6,9 @@ import warnings
 from argparse import ArgumentParser
 from io import BytesIO
 
-import psycopg2
 import yaml
 from genologics.config import BASEURI, PASSWORD, USERNAME
-from genologics.entities import File, Project
+from genologics.entities import Project
 from genologics.lims import Lims
 from openpyxl import load_workbook
 
@@ -30,14 +29,16 @@ TENX_DUAL_PAT = re.compile("SI-(?:TT|NT|NN|TN|TS)-[A-H][1-9][0-2]?")
 SMARTSEQ_PAT = re.compile("SMARTSEQ[1-9]?-[1-9][0-9]?[A-P]")
 
 
-def verify_samplename(sample_name, proj_id):
+def verify_samplename(sample_name, proj_id, file_name):
     message = set()
     if not NGISAMPLE_PAT.findall(sample_name):
-        message.append(f"SAMPLE NAME WARNING: Bad sample name format {sample_name}")
+        message.append(
+            f"[{file_name}] SAMPLE NAME WARNING: Bad sample name format {sample_name}"
+        )
     else:
         if sample_name.split("_")[0] != proj_id:
             message.append(
-                f"SAMPLE NAME WARNING: Sample name {sample_name} does not match project ID {proj_id}"
+                f"[{file_name}] SAMPLE NAME WARNING: Sample name {sample_name} does not match project ID {proj_id}"
             )
     return message
 
@@ -52,7 +53,7 @@ def my_distance(idx_a, idx_b):
     return diffs
 
 
-def parse_libary_info_sheet(worksheet, proj_id):
+def parse_libary_info_sheet(worksheet, proj_id, file_name):
     data = {}
     message = set()
     for row in worksheet.iter_rows(
@@ -61,7 +62,7 @@ def parse_libary_info_sheet(worksheet, proj_id):
         sample_name = row[0]
         if sample_name is None:
             continue
-        message.update(verify_samplename(sample_name, proj_id))
+        message.update(verify_samplename(sample_name, proj_id, file_name))
         well = row[1]
         index = row[3]
         if well not in data:
@@ -77,19 +78,19 @@ def parse_libary_info_sheet(worksheet, proj_id):
                 )  # Remove the different length to avoid multiple warnings for the same issue
                 common_index = data[well]["index_length"].pop()
                 message.add(
-                    f"INDEX LENGTH WARNING: Multiple index lengths noticed in pool {well} for Sample {sample_name}, length {len(index)} is different from {common_index}"
+                    f"[{file_name}] INDEX LENGTH WARNING: Multiple index lengths noticed in pool {well} for Sample {sample_name}, length {len(index)} is different from {common_index}"
                 )
                 data[well]["index_length"].add(common_index)
 
         if index == "" or index is None:
             message.add(
-                f"EMPTY INDEX: Sample {sample_name} in well {well} has an empty index"
+                f"[{file_name}] EMPTY INDEX: Sample {sample_name} in well {well} has an empty index"
             )
         else:
             if index == "NoIndex":
                 if data[well]["count"] > 1:
                     message.add(
-                        f"NOINDEX ERROR: Well {well} has NoIndex but but contains more than one sample"
+                        f"[{file_name}] NOINDEX ERROR: Well {well} has NoIndex but but contains more than one sample"
                     )
             else:
                 if (
@@ -105,7 +106,7 @@ def parse_libary_info_sheet(worksheet, proj_id):
                     )
                 ):
                     message.append(
-                        f"INDEX FORMAT ERROR: Sample {sample_name} has a bad format or unknown index category\n"
+                        f"[{file_name}] INDEX FORMAT ERROR: Sample {sample_name} has a bad format or unknown index category\n"
                     )
                 else:
                     idxs = (
@@ -146,11 +147,11 @@ def parse_libary_info_sheet(worksheet, proj_id):
                                     )
                                     if dist == 0:
                                         message.append(
-                                            f"INDEX COLLISION ERROR: Index {idx_a} and Index {idx_b} (for sample {sample_name}) in pool {well}"
+                                            f"[{file_name}] INDEX COLLISION ERROR: Index {idx_a} and Index {idx_b} (for sample {sample_name}) in pool {well}"
                                         )
                                     else:
                                         message.append(
-                                            f"SIMILAR INDEX WARNING: Index {idx_a} and Index {idx_b} (for sample {sample_name}) in pool {well}"
+                                            f"[{file_name}] SIMILAR INDEX WARNING: Index {idx_a} and Index {idx_b} (for sample {sample_name}) in pool {well}"
                                         )
                         except IndexError:
                             # try:
@@ -170,43 +171,21 @@ def main(lims, pid, auto):
     if not project.files:
         sys.stderr.write("No samplesheet file found for the project.\n")
         sys.exit(1)
-    if len(project.files) == 1:
-        samplesheet_file = project.files[0]
-    else:
-        message.add("Multiple files found for the project, choosing the latest one.\n")
-        luids = [f.id for f in project.files]
-        # Query files with given luids to get the latest one
-        query = (
-            "select luid from glsfile "
-            f"where luid in {tuple(luids)}"
-            "order by createddate desc limit 1;"
+    for samplesheet_file in project.files:
+        stream = lims.get_file_contents(uri=samplesheet_file.uri)
+        data = stream.read()
+        workbooks = load_workbook(BytesIO(data), read_only=True, data_only=True)
+        worksheet = workbooks.active
+        file_name = samplesheet_file.original_location
+        library_information = (
+            "Library_information"
+            in list(worksheet.iter_rows(min_row=3, max_row=3, values_only=True))[0][12]
         )
-        with psycopg2.connect(
-            user=config["username"],
-            host=config["url"],
-            database=config["db"],
-            password=config["password"],
-        ) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(query)
-                query_output = cursor.fetchall()
-                samplesheet_file = File(
-                    lims, uri=BASEURI + "/api/v2/files/" + query_output[0][0]
-                )
+        # sample_information = 'Sample_information' in list(worksheet.iter_rows(min_row=4, max_row=4, values_only=True))[0][8]
 
-    stream = lims.get_file_contents(uri=samplesheet_file.uri)
-    data = stream.read()
-    workbooks = load_workbook(BytesIO(data), read_only=True, data_only=True)
-    worksheet = workbooks.active
-    library_information = (
-        "Library_information"
-        in list(worksheet.iter_rows(min_row=3, max_row=3, values_only=True))[0][12]
-    )
-    # sample_information = 'Sample_information' in list(worksheet.iter_rows(min_row=4, max_row=4, values_only=True))[0][8]
-
-    if library_information:
-        data, lib_info_message = parse_libary_info_sheet(worksheet, pid)
-        message.update(lib_info_message)
+        if library_information:
+            data, lib_info_message = parse_libary_info_sheet(worksheet, pid, file_name)
+            message.update(lib_info_message)
     if message:
         if auto:
             print(
