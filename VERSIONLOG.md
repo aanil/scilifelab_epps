@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20260330.1
+
+Bug fix for + symbol in miseq flowcell id and add several lims steps for comments to running notes.
+
 ## 20260320.1
 
 Fix: Add Miseq i100 for readcount and generate a correct FA driver file for pools.
