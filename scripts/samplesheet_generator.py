@@ -587,7 +587,9 @@ def gen_Nextseq_lane_data(pro):
                         ",", ""
                     )
                     # Add flowcell ID correction here
-                    sp_obj["fc"] = out.location[0].name.replace(",", "").upper().replace("+", "-")
+                    sp_obj["fc"] = (
+                        out.location[0].name.replace(",", "").upper().replace("+", "-")
+                    )
 
                     sp_obj["sw"] = out.location[1].replace(",", "")
                     sp_obj["idx1"] = idxs[0].replace(",", "")
@@ -775,7 +777,7 @@ def main(lims, args):
                             if process.udf.get("Flowcell Series Number")
                             else out.location[0].name.upper()
                         ).replace("+", "-")
-                    
+
                     else:
                         fc_name = out.location[0].name.upper()
                 elif process.type.name in [
