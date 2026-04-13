@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20260413.1
+
+Add index length to error when encountering differing index lengths
+
 ## 20260330.1
 
 Bug fix for + symbol in miseq flowcell id and add several lims steps for comments to running notes.
