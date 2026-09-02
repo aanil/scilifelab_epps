@@ -4,7 +4,6 @@
 
 Refactor zebra_barcodes script and update the CUPS server it uses.
 
-
 ## 20260826.1
 
 Clamp negative concentration UDF values to 0 before amount calculation in qc_amount_calculation.py, logging a warning for each affected sample.
