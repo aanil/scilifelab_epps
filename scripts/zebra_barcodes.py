@@ -3,9 +3,7 @@ import datetime
 import logging
 import subprocess
 from argparse import ArgumentParser
-from pathlib import Path
 
-import yaml
 from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Process
 from genologics.lims import Lims
@@ -14,7 +12,6 @@ from scilifelab_epps.epp import upload_file
 from scilifelab_epps.wrapper import epp_decorator
 
 TIMESTAMP = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-DEFAULT_CONFIG_PATH = Path("~/config/zebra_printer_config.yaml").expanduser()
 DEFAULT_CONFIG = {
     "printer": {
         "command": "lp",
@@ -54,24 +51,6 @@ DEFAULT_CONFIG = {
 }
 
 
-def load_config(config_path=None):
-    """Load barcode configuration, falling back to built-in defaults."""
-
-    path = Path(config_path).expanduser() if config_path else DEFAULT_CONFIG_PATH
-    if not path.exists():
-        logging.info(f"No config file found at {path}, using built-in defaults.")
-        return DEFAULT_CONFIG
-
-    with path.open() as config_file:
-        config = yaml.safe_load(config_file) or {}
-
-    if not isinstance(config, dict):
-        raise ValueError(f"Barcode config must contain a mapping: {path}")
-
-    logging.info(f"Loaded barcode config from {path}")
-    return config
-
-
 def build_zpl_format(format_lines, data_lines, copies=1):
     """Helper to build ZPL format and data for a label."""
     lines = []
@@ -88,9 +67,9 @@ def build_zpl_format(format_lines, data_lines, copies=1):
     return lines
 
 
-def make_container_label(plateid, config):
+def make_container_label(plateid):
     """Construct label with container id as human readable and barcode"""
-    label_config = config["labels"]["container_id"]
+    label_config = DEFAULT_CONFIG["labels"]["container_id"]
     format_lines = label_config["format_lines"]
     data_lines = [
         f"^FN1^FD{plateid}^FS",  # Assign plateid to field 1 (human readable)
@@ -99,9 +78,9 @@ def make_container_label(plateid, config):
     return build_zpl_format(format_lines, data_lines, label_config["copies"])
 
 
-def makeNameBarcode(plate_name, config, type):
+def makeNameBarcode(plate_name, type):
     """Construct label with container name as human readable"""
-    label_config = config["labels"][type]
+    label_config = DEFAULT_CONFIG["labels"][type]
     format_lines = []
     # Adjust font size and position based on name length
     if len(plate_name) > label_config["max_length"]:
@@ -118,9 +97,9 @@ def makeNameBarcode(plate_name, config, type):
     return build_zpl_format(format_lines, data_lines, label_config["copies"])
 
 
-def makeOperatorAndDateBarcode(operator, date, config):
+def makeOperatorAndDateBarcode(operator, date):
     """Construct label with operator name and date in human readable format"""
-    label_config = config["labels"]["operator_date"]
+    label_config = DEFAULT_CONFIG["labels"]["operator_date"]
     format_lines = label_config["format_lines"]
     if len(operator) > label_config["operator_max_length"]:
         operator = operator[:19]  # Truncate operator name if too long
@@ -133,7 +112,6 @@ def makeOperatorAndDateBarcode(operator, date, config):
 
 @epp_decorator(script_path=__file__, timestamp=TIMESTAMP)
 def main(args):
-    config = load_config(args.config)
     lims = Lims(BASEURI, USERNAME, PASSWORD)
     lims.check_version()
     process = Process(lims, id=args.pid)
@@ -144,24 +122,24 @@ def main(args):
         logging.info(
             f"Making label for container ID with barcode: <barcode> {container.id}"
         )
-        zpl_code += make_container_label(container.id, config)
+        zpl_code += make_container_label(container.id)
 
         logging.info(f"Making label for container ID: {container.id}")
-        zpl_code += makeNameBarcode(container.name, config, "container_name")
+        zpl_code += makeNameBarcode(container.name, "container_name")
 
         logging.info(
             "Making label for operator and date: "
             f"{process.technician.name} {str(datetime.date.today())}"
         )
         zpl_code += makeOperatorAndDateBarcode(
-            process.technician.name, str(datetime.date.today()), config
+            process.technician.name, str(datetime.date.today())
         )
 
         logging.info(f"Making label for step name: {process.type.name}")
-        zpl_code += makeNameBarcode(process.type.name, config, "process_name")
+        zpl_code += makeNameBarcode(process.type.name, "process_name")
 
     # Build args list to label printer command
-    printer_config = config["printer"]
+    printer_config = DEFAULT_CONFIG["printer"]
     lp_args = [printer_config["command"]]
     lp_args += ["-h", printer_config["host"]]
     lp_args += ["-d", printer_config["destination"]]
@@ -205,11 +183,6 @@ if __name__ == "__main__":
     parser.add_argument("--pid", help="The process LIMS id.")
     parser.add_argument("--file", help="LIMS file slot name to use for barcode file.")
     parser.add_argument("--log", help="LIMS file slot name to use for log file.")
-    parser.add_argument(
-        "--config",
-        default=str(DEFAULT_CONFIG_PATH),
-        help="Path to barcode printing configuration file.",
-    )
     parser.add_argument(
         "--test",
         action="store_true",
