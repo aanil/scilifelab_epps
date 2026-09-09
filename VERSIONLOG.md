@@ -1,5 +1,25 @@
 # Scilifelab_epps Version Log
 
+## 20260826.1
+
+Clamp negative concentration UDF values to 0 before amount calculation in qc_amount_calculation.py, logging a warning for each affected sample.
+
+## 20260813.1
+
+Added Illumina Trupath flowcells (C2 and C8) to the list of valid flowcells and give it a preliminary minimal yield requirement of 800M reads per lane (based on Illuminas specs).
+
+## 20260727.1
+
+Fix demux stats noIndex flag leaking across lanes and readscount deduplication with artifact ID tiebreaker and lane correction detection.
+
+## 20260724.1
+
+Fixing FA attachment files and handling decimal range values due to the FA software version update.
+
+## 20260722.1
+
+Add the step Aggregate QC (CytAssist) to the categories list.
+
 ## 20260703.2
 
 Add expected clusters for 5B chemistry
@@ -7,6 +27,10 @@ Add expected clusters for 5B chemistry
 ## 20260703.1
 
 Add 5B to valid chemistries
+
+## 20260702.1
+
+Move conditions that are not dependent on process outputs out of loop looping through said outputs in samplesheet generator
 
 ## 20260609.1
 
