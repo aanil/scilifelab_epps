@@ -28,6 +28,10 @@ Add expected clusters for 5B chemistry
 
 Add 5B to valid chemistries
 
+## 20260702.1
+
+Move conditions that are not dependent on process outputs out of loop looping through said outputs in samplesheet generator
+
 ## 20260609.1
 
 Fix ONT workflow: migrate ont_read_stats.py to IBM Cloudant v1 API and fix ONT reads aggregation in readscount.py
@@ -59,6 +63,10 @@ Reverse complement index 2 for MiSeq i100 for in-house libraries and bug fix for
 ## 20260330.1
 
 Bug fix for + symbol in miseq flowcell id and add several lims steps for comments to running notes.
+
+## 20260320.2
+
+Add functions to project validator
 
 ## 20260320.1
 
