@@ -10,7 +10,6 @@ from email.mime.text import MIMEText
 from io import BytesIO
 from typing import TypedDict, cast
 
-import yaml
 from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Project
 from genologics.lims import Lims
@@ -21,14 +20,123 @@ from scilifelab_epps.utils.get_epp_user import get_epp_user
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
-with open("/opt/gls/clarity/users/glsai/config/genosqlrc.yaml") as f:
-    config = yaml.safe_load(f)
-
-DESC = """EPP used to validate a project before it is released, including checking sample name format, index format and index distance in library pool.
+DESC = """EPP used to validate a project including checking sample name format, index format and index distance in library pool.
 """
 
 # Pre-compile regexes in global scope:
 NGISAMPLE_PAT = re.compile("P[0-9]+_[0-9]+")
+INDEX_PAT = re.compile(
+    r"^([ATGC]{6,24}(-[ATGC]{6,12})?|SI-[A-Z0-9]{2,4}-[A-Z]\d{1,2}|NB\d{2}|BC\d{2}|NoIndex)$"
+)
+
+
+# Verify sample IDs
+def verify_sample_ids(lims, project):
+    """Validate project sample IDs for format, count, and sequence."""
+    message = []
+
+    # Get all samples in the project
+    samples = lims.get_samples(projectname=project.name)
+
+    if not samples:
+        message.append(
+            f"SAMPLE COUNT WARNING: No samples found for project {project.id}"
+        )
+        return message
+
+    ngi_ids = []
+    customer_names = []
+
+    # Validate sample name format and collect data
+    for sample in sorted(samples, key=lambda s: s.name):
+        sample_id = sample.name
+        customer_name = sample.udf.get("Customer Name")
+
+        ngi_ids.append(sample_id)
+        if customer_name:
+            customer_names.append(customer_name)
+
+        # Validate format and prefix match
+        if not NGISAMPLE_PAT.search(sample_id):
+            message.append(f"SAMPLE NAME WARNING: Bad sample ID format {sample_id}")
+        elif sample_id.split("_")[0] != project.id:
+            message.append(
+                f"SAMPLE NAME WARNING: Sample ID {sample_id} does not match "
+                f"project ID {project.id}"
+            )
+
+    # Check count consistency
+    if len(ngi_ids) != len(customer_names):
+        message.append(
+            f"SAMPLE COUNT WARNING: Mismatch between NGI Sample IDs ({len(ngi_ids)}) "
+            f"and customer sample names ({len(customer_names)})"
+        )
+
+    # Validate sample numbering: group by plate digit, check first sample and gaps
+    if ngi_ids:
+        try:
+            # Group samples by plate digit (first digit of suffix: _1XXX, _2XXX, etc.)
+            plates = {}
+            for sample_id in ngi_ids:
+                sample_suffix = sample_id.split("_")[1] if "_" in sample_id else None
+                if sample_suffix:
+                    plate_digit = sample_suffix[0]
+                    suffix_num = int(sample_suffix)
+                    if plate_digit not in plates:
+                        plates[plate_digit] = []
+                    plates[plate_digit].append(suffix_num)
+
+            # Validate each plate: first sample must be X001 or X01, check gaps
+            for plate_digit in sorted(plates.keys()):
+                plate_suffixes = sorted(plates[plate_digit])
+
+                # Check first sample starts with X001 or X01
+                expected_values = (
+                    int(f"{plate_digit}001"),
+                    int(f"{plate_digit}01"),
+                )
+                if plate_suffixes[0] not in expected_values:
+                    message.append(
+                        f"SAMPLE SEQUENCE WARNING: Plate {plate_digit} first "
+                        f"sample should be _{plate_digit}001 or _{plate_digit}01, "
+                        f"but got _{plate_suffixes[0]}"
+                    )
+
+                # Check gaps within plate
+                for curr, next_val in zip(plate_suffixes, plate_suffixes[1:]):
+                    if next_val - curr != 1:
+                        message.append(
+                            f"SAMPLE SEQUENCE WARNING: Gap detected in plate "
+                            f"{plate_digit} numbering between {curr} and "
+                            f"{next_val}. Verify missing samples in the "
+                            f"uploaded CSV file."
+                        )
+        except (ValueError, IndexError):
+            pass  # Skip validation if suffix extraction fails
+
+    return message
+
+
+def verify_indexes(lims, project):
+    """Validate that all 4-digit samples have valid index formats."""
+    message = []
+
+    samples = lims.get_samples(projectname=project.name)
+    for sample in samples:
+        # Only validate 4-digit suffix samples (finished libraries)
+        suffix = sample.name.split("_")[1] if "_" in sample.name else ""
+        if len(suffix) == 4:
+            # Check if index exists and is valid
+            if not sample.artifact.reagent_labels:
+                message.append(f"INDEX WARNING: Sample {sample.name} has no index")
+            else:
+                index = sample.artifact.reagent_labels[0].strip()
+                if not index:
+                    message.append(f"INDEX WARNING: Sample {sample.name} has no index")
+                elif not INDEX_PAT.match(index):
+                    message.append(
+                        f"INDEX WARNING: Sample {sample.name} has invalid index '{index}'"
+                    )
 IDX_PAT = re.compile("([ATCG]{4,}N*)-?([ATCG]*)")
 VALIDBASES_PAT = re.compile(r"^[ATCG\-]+$")
 TENX_SINGLE_PAT = re.compile("SI-(?:GA|NA)-[A-H][1-9][0-2]?")
@@ -104,6 +212,8 @@ def verify_samplename(sample_name: str, proj_id: str) -> set[str]:
     return message
 
 
+def main(lims, pid):
+    """Validate a project and exit with appropriate status code."""
 def my_distance(idx_a: str, idx_b: str) -> int:
     diffs = 0
     short = min((idx_a, idx_b), key=len)
@@ -240,6 +350,14 @@ def main(lims: Lims, pid: str, auto: bool) -> None:
         )
         # sample_information = 'Sample_information' in list(worksheet.iter_rows(min_row=4, max_row=4, values_only=True))[0][8]
 
+    # Validate sample IDs
+    message += verify_sample_ids(lims, project)
+
+    # Validate indexes for finished libraries
+    message += verify_indexes(lims, project)
+
+    if not message:
+        print(f"No issue detected for project {pid}")
         if library_information:
             data, lib_info_message = parse_library_info_sheet(worksheet, pid)
             if lib_info_message:
