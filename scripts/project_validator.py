@@ -3,7 +3,6 @@
 import re
 import smtplib
 import sys
-import warnings
 from argparse import ArgumentParser
 from email.message import Message
 from email.mime.text import MIMEText
@@ -14,8 +13,6 @@ from genologics.entities import Project
 from genologics.lims import Lims
 
 from scilifelab_epps.utils.get_epp_user import get_epp_user
-
-warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
 DESC = """EPP used to validate a project including checking sample name format, index format and index distance in library pool.
 """
