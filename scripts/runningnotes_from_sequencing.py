@@ -44,6 +44,8 @@ def main(args):
         instrument_type = "NextSeq"
     elif pro.type.name == "Load to Flowcell (NovaSeqXPlus) v1.0":
         instrument_type = "NovaSeqXPlus"
+    elif pro.type.name == "Load to Flowcell (MiSeq i100) v1.0":
+        instrument_type = "MiSeq i100"
 
     for name, value in pro.udf.items():
         pro_udfs[name] = value
@@ -53,6 +55,8 @@ def main(args):
         inst = pro_udfs["Instrument"]
     elif instrument_type == "NovaSeqXPlus":
         inst = f"{pro_udfs['Instrument']} {pro_udfs['Side']}"
+    elif instrument_type == "MiSeq i100":
+        inst = pro.instrument.name
 
     date_started = datetime.datetime.fromisoformat(pro.step.date_started).date()
 
@@ -91,6 +95,7 @@ def main(args):
     an_analyte_container = pro.output_containers()[0]
     container_name = None
     container_type = None
+    container_name_type = "FC"
     if instrument_type == "NextSeq":
         container_name = pro_udfs["Flowcell Series Number"]
         container_type = (
@@ -99,6 +104,11 @@ def main(args):
     elif instrument_type == "NovaSeqXPlus":
         container_name = an_analyte_container.name
         container_type = an_analyte_container.type.name
+    elif instrument_type == "MiSeq i100":
+        container_name = pro_udfs["Flowcell Series Number"]
+        container_type = pro_udfs["Run Mode"]
+        container_name_type = "Cartridge"
+
     for well, pool_artifact in an_analyte_container.placements.items():
         if pool_artifact.id in pools:
             pools[pool_artifact.id]["lane"] = well.split(":")[0]
@@ -111,18 +121,22 @@ def main(args):
     for project in project_ordered_lanes:
         project_comments = "\n".join(project_specific_comments.get(project, []))
         pool_text = ""
+
         for pool_id in project_ordered_lanes[project]:
             pool = pools[pool_id]
             if instrument_type == "NextSeq":
                 pool_text += f"Pool '{pool['pool_name']}', {pool['Loading Conc. (pM)']}pM, {pool['% phiX']}% PhiX, \n"
             elif instrument_type == "NovaSeqXPlus":
                 pool_text += f"Pool '{pool['pool_name']}' in lane {pool['lane']}, {pool['Loading Conc. (pM)']}pM, {pool['% phiX']}% PhiX, \n"
+            elif instrument_type == "MiSeq i100":
+                pool_text += f"Pool '{pool['pool_name']}', {pool['Loading Conc. (pM)']}pM, {pool['% phiX']}% PhiX, \n"
+
         general_comments_text = "\n".join(general_comments)
         note = (
             f"Comment from {pro.type.name} ([LIMS]({BASEURI}/clarity/work-details/{pro.id.split('-')[1]})) : \n"
             f"**Sequencing started {date_started} ** by {pro.technician.name}\n"
             f"{pool_text}"
-            f"{container_type} FC={container_name}, on {inst}, {seq_setup} \n"
+            f"{container_type} {container_name_type}={container_name}, on {inst}, {seq_setup} \n"
             f"{project_comments} \n"
             f"{general_comments_text} \n"
             f"/{epp_initiator.name}"

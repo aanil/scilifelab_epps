@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20260928.1
+
+Add MiSeq i100 to automatic runnning note generation in sequencing.
+
 ## 20260923.1
 
 Watchmaker workflow updates, running-notes mapping, and logbook config changes.
