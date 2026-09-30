@@ -4,6 +4,18 @@
 
 Add functions to project validator
 
+## 20260923.1
+
+Watchmaker workflow updates, running-notes mapping, and logbook config changes.
+
+## 20260916.1
+
+Add MiSeq i100 logbook mapping updates and fix EPP logger stream compatibility by implementing StreamToLogger.flush.
+
+## 20260902.1
+
+Refactor zebra_barcodes script and update the CUPS server it uses.
+
 ## 20260826.1
 
 Clamp negative concentration UDF values to 0 before amount calculation in qc_amount_calculation.py, logging a warning for each affected sample.
