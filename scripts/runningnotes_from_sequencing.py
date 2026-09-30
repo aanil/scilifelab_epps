@@ -95,7 +95,6 @@ def main(args):
     an_analyte_container = pro.output_containers()[0]
     container_name = None
     container_type = None
-    container_name_type = "FC"
     if instrument_type == "NextSeq":
         container_name = pro_udfs["Flowcell Series Number"]
         container_type = (
@@ -107,7 +106,6 @@ def main(args):
     elif instrument_type == "MiSeq i100":
         container_name = pro_udfs["Flowcell Series Number"]
         container_type = pro_udfs["Run Mode"]
-        container_name_type = "Cartridge"
 
     for well, pool_artifact in an_analyte_container.placements.items():
         if pool_artifact.id in pools:
@@ -121,7 +119,6 @@ def main(args):
     for project in project_ordered_lanes:
         project_comments = "\n".join(project_specific_comments.get(project, []))
         pool_text = ""
-
         for pool_id in project_ordered_lanes[project]:
             pool = pools[pool_id]
             if instrument_type == "NextSeq":
@@ -136,7 +133,7 @@ def main(args):
             f"Comment from {pro.type.name} ([LIMS]({BASEURI}/clarity/work-details/{pro.id.split('-')[1]})) : \n"
             f"**Sequencing started {date_started} ** by {pro.technician.name}\n"
             f"{pool_text}"
-            f"{container_type} {container_name_type}={container_name}, on {inst}, {seq_setup} \n"
+            f"{container_type} FC={container_name}, on {inst}, {seq_setup} \n"
             f"{project_comments} \n"
             f"{general_comments_text} \n"
             f"/{epp_initiator.name}"
