@@ -2,7 +2,7 @@
 
 ## 20260925.1
 
-Update logbook PCR Cycler fallback and CytAssist instrument mapping.
+Update logbook PCR Cycler fallback, add Visium HD3 steps for logbook and RN, remove logbook.py.
 
 ## 20260923.1
 
