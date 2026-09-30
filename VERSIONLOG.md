@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20260930.1
+
+Add functions to project validator
+
 ## 20260826.1
 
 Clamp negative concentration UDF values to 0 before amount calculation in qc_amount_calculation.py, logging a warning for each affected sample.
@@ -63,10 +67,6 @@ Reverse complement index 2 for MiSeq i100 for in-house libraries and bug fix for
 ## 20260330.1
 
 Bug fix for + symbol in miseq flowcell id and add several lims steps for comments to running notes.
-
-## 20260320.2
-
-Add functions to project validator
 
 ## 20260320.1
 

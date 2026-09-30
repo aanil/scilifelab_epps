@@ -295,7 +295,7 @@ def main(lims: Lims, pid: str, auto: bool) -> None:
     else:
         print("No issue detected with indexes or placement")
 
-    with open("index_checker.log", "w") as logContext:
+    with open(args.log, "w") as logContext:
         logContext.write("\n".join(messages))
     # Throw red warning message when it is not automatically run
     if not auto and not messages:
@@ -308,6 +308,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log",
         dest="log",
+        default="index_checker.log",
         help=("File name for standard log file, for runtime information and problems."),
     )
     parser.add_argument(
