@@ -4,6 +4,10 @@
 
 Add MiSeq i100 to automatic runnning note generation in sequencing.
 
+## 20260925.1
+
+Update logbook PCR Cycler fallback, add Visium HD3 steps for logbook and RN, remove logbook.py.
+
 ## 20260923.1
 
 Watchmaker workflow updates, running-notes mapping, and logbook config changes.
