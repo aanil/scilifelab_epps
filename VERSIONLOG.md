@@ -1,5 +1,9 @@
 # Scilifelab_epps Version Log
 
+## 20260928.1
+
+Add MiSeq i100 to automatic runnning note generation in sequencing.
+
 ## 20260925.1
 
 Update logbook PCR Cycler fallback, add Visium HD3 steps for logbook and RN, remove logbook.py.
