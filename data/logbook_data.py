@@ -110,8 +110,11 @@ lims_process_record = {
     "Capture And Wash (SS XT) 4.0": {
         "lims_instrument": {"dest_file": "Bravo", "details": ["Processname"]}
     },
+    "cDNA Amplification and Clean-up (Visium HD 3) v1.0": {
+        "udf_PCR Cycler": {"dest_file": "PCR"},
+    },
     "CytAssist Probe release and Extension": {
-        "udf_Instrument Used": {"dest_file": "CytAssist", "details": ["Processname"]},
+        "lims_instrument": {"dest_file": "CytAssist", "details": ["Processname"]},
         "udf_PCR Cycler": {"dest_file": "PCR"},
     },
     "Decrosslinking and/or Destaining": {
@@ -125,6 +128,9 @@ lims_process_record = {
     },
     "Deparafinization, H&E, Tissue Imaging": {
         "udf_PCR Cycler": {"dest_file": "PCR"},
+    },
+    "Destaining, Cytassist Enabled PolyA capture RT and Denaturation(Visium HD 3) v1.0": {
+        "lims_instrument": {"dest_file": "CytAssist", "details": ["Processname"]},
     },
     "Diluting Samples": {
         "lims_instrument": {
@@ -195,6 +201,9 @@ lims_process_record = {
     "Fragmentation & cDNA synthesis (TruSeq RNA) 4.0": {
         "udf_PCR Machine": {"dest_file": "PCR"}
     },
+    "Fragmentation, Ligation, Index PCR and Double Size Selection (Visium HD 3) v1.0": {
+        "udf_PCR Cycler": {"dest_file": "PCR"},
+    },
     "g-Tube Fragmentation": {
         "lims_instrument": {
             "dest_file": "Qubit",
@@ -213,6 +222,17 @@ lims_process_record = {
         "lims_instrument": {
             "dest_file": "Qubit",
             "details": ["Assay", "Lot no: Qubit kit"],
+        }
+    },
+    "General QC step v1.0": {
+        "lims_instrument": {
+            "dest_file": ["Bioanalyzer", "FragmentAnalyzer"],
+            "details": [
+                "Lot no: Chip",
+                "Lot no: Reagent kit",
+                "Lot no: Ladder",
+                "Lot no: Fragment Analyzer Reagents",
+            ],
         }
     },
     "Hybridize Library  (SS XT) 4.0": {
@@ -538,6 +558,9 @@ lims_process_record = {
     "RiboZero depletion": {
         "lims_instrument": {"dest_file": "Bravo", "details": ["Processname"]},
         "udf_PCR Machine": {"dest_file": "PCR"},
+    },
+    "Second Strand Synthesis and Elution (Visium HD 3) v1.0": {
+        "udf_PCR Cycler": {"dest_file": "PCR"},
     },
     "Selection, cDNA Synthesis and Library Construction": {
         "lims_instrument": {
