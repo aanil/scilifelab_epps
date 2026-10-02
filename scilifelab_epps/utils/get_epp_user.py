@@ -2,7 +2,8 @@
 
 import psycopg2
 import yaml
-from genologics.entities import Lims, Researcher
+from genologics.entities import Researcher
+from genologics.lims import Lims
 
 
 def get_epp_user(

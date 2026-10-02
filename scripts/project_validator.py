@@ -12,6 +12,7 @@ from genologics.config import BASEURI, PASSWORD, USERNAME
 from genologics.entities import Project
 from genologics.lims import Lims
 
+from data.Chromium_10X_indexes import Chromium_10X_indexes
 from scilifelab_epps.utils.get_epp_user import get_epp_user
 
 DESC = """EPP used to validate a project including checking sample name format, index format and index distance in library pool.
@@ -27,6 +28,7 @@ VALIDBASES_PAT = re.compile(r"^[ATCG\-]+$")
 TENX_SINGLE_PAT = re.compile("SI-(?:GA|NA)-[A-H][1-9][0-2]?")
 TENX_DUAL_PAT = re.compile("SI-(?:TT|NT|NN|TN|TS)-[A-H][1-9][0-2]?")
 SMARTSEQ_PAT = re.compile("SMARTSEQ[1-9]?-[1-9][0-9]?[A-P]")
+compl = {"A": "T", "C": "G", "G": "C", "T": "A"}
 
 
 class IndexPair(TypedDict):
@@ -36,8 +38,7 @@ class IndexPair(TypedDict):
 
 class WellData(TypedDict):
     count: int
-    labels: list[IndexPair]
-    label_length: set[int]
+    labels: dict[str, IndexPair]  # Maps sample_id to resolved IndexPair
 
 
 def verify_samplename(sample_name: str, proj_id: str) -> list[str]:
@@ -87,8 +88,9 @@ def my_distance(idx_a: str, idx_b: str) -> int:
 def validate_reagent_label(
     reagent_label: str, sample_id: str, pool: str, data: dict[str, WellData]
 ) -> list[str]:
-    """Validate a single reagent label and check index distance."""
+    """Validate a single reagent label and check index distance. Returns messages."""
     message = []
+    curr_idx: IndexPair | None = None
 
     if reagent_label == "NoIndex":
         if data[pool]["count"] > 1:
@@ -102,13 +104,32 @@ def validate_reagent_label(
                 f"INDEX FORMAT ERROR: Sample {sample_id} with index '{reagent_label}' has a bad format: {reason}"
             )
         else:
-            idxs = (
-                TENX_SINGLE_PAT.findall(reagent_label)
-                or TENX_DUAL_PAT.findall(reagent_label)
-                or SMARTSEQ_PAT.findall(reagent_label)
-            )
-            # We'll skip TENX and SMARTSEQ indexes for now
-            if not idxs:
+            is_tenx_index = TENX_SINGLE_PAT.findall(
+                reagent_label
+            ) or TENX_DUAL_PAT.findall(reagent_label)
+            is_smartseq_index = SMARTSEQ_PAT.findall(reagent_label)
+            if is_tenx_index:
+                if TENX_SINGLE_PAT.findall(reagent_label):
+                    idx_1 = Chromium_10X_indexes[reagent_label].replace(",", "")
+                    idx_2 = ""
+                else:
+                    idx_1 = Chromium_10X_indexes[reagent_label][0].replace(",", "")
+                    idx_2 = "".join(
+                        reversed(
+                            [
+                                compl.get(b, b)
+                                for b in Chromium_10X_indexes[reagent_label][1]
+                                .replace(",", "")
+                                .upper()
+                            ]
+                        )
+                    )
+            # skipping checks for SMARTSEQ indexes for now
+            elif is_smartseq_index:
+                message.append(
+                    f"INDEX FORMAT ERROR: Sample {sample_id} with index '{reagent_label}' is a SMARTSEQ index, skipping detailed checks"
+                )
+            else:
                 idxs_matches = IDX_PAT.findall(reagent_label)
                 if not idxs_matches:
                     message.append(
@@ -117,14 +138,20 @@ def validate_reagent_label(
                     return message
 
                 idxs = idxs_matches[0]
-                curr_idx: IndexPair = {
-                    "idx1": idxs[0],
-                    "idx2": idxs[1] if len(idxs) > 1 else "",
+                idx_1 = idxs[0]
+                idx_2 = idxs[1] if len(idxs) > 1 else ""
+
+            if curr_idx is None:
+                curr_idx = {
+                    "idx1": idx_1,
+                    "idx2": idx_2,
                 }
-                data[pool]["labels"].append(curr_idx)
+                data[pool]["labels"][sample_id] = curr_idx
 
                 # Check index distance from previous samples in pool
-                for prev_idx in data[pool]["labels"][:-1]:
+                for prev_sample_id, prev_idx in data[pool]["labels"].items():
+                    if prev_sample_id == sample_id:
+                        continue  # Skip self-comparison
                     dist = my_distance(prev_idx["idx1"], curr_idx["idx1"])
                     if prev_idx.get("idx2", "") and curr_idx.get("idx2", ""):
                         dist += my_distance(prev_idx["idx2"], curr_idx["idx2"])
@@ -174,6 +201,42 @@ def validate_plate_sequences(plates: dict[str, list[int]]) -> list[str]:
     return message
 
 
+def validate_pool_label_lengths(pool: str, pool_data: WellData) -> list[str]:
+    """Validate that all resolved indices in a pool have the same combined length."""
+    message = []
+
+    if not pool_data["labels"]:
+        return message
+
+    # Calculate lengths for all samples
+    length_map: dict[int, list[str]] = {}  # Maps length -> [sample_ids]
+    for sample_id, index_pair in pool_data["labels"].items():
+        resolved_length = len(index_pair["idx1"]) + len(index_pair["idx2"])
+        if resolved_length not in length_map:
+            length_map[resolved_length] = []
+        length_map[resolved_length].append(sample_id)
+
+    # If only one length, all is good
+    if len(length_map) == 1:
+        return message
+
+    # Find the most common length
+    most_common_length = max(length_map, key=lambda k: len(length_map[k]))
+
+    # Report any indices with different lengths
+    for resolved_length, samples in length_map.items():
+        if resolved_length != most_common_length:
+            for sample_id in samples:
+                index_pair = pool_data["labels"][sample_id]
+                idx_str = f"{index_pair.get('idx1', '')}-{index_pair.get('idx2', '')}"
+                message.append(
+                    f"LABEL LENGTH WARNING: Pool {pool}, Sample {sample_id} has resolved index length {resolved_length} ({idx_str}), "
+                    f"but majority of samples have length {most_common_length}"
+                )
+
+    return message
+
+
 # Verify sample IDs
 def verify_samples(lims: Lims, project: Project) -> list[str]:
     """Validate project sample IDs for format, count, and sequence."""
@@ -215,29 +278,22 @@ def verify_samples(lims: Lims, project: Project) -> list[str]:
         if not sample.artifact.reagent_labels:
             message.append(f"INDEX WARNING: Sample {sample.name} has no label")
         else:
-            data.setdefault(pool, {"count": 0, "labels": [], "label_length": set()})
+            data.setdefault(pool, {"count": 0, "labels": {}})
             data[pool]["count"] += 1
 
             reagent_label = sample.artifact.reagent_labels[0].strip()
             if not reagent_label:
                 message.append(f"INDEX WARNING: Sample {sample.name} has no label")
             else:
-                # Track label length and warn if mismatched
-                if (
-                    data[pool]["label_length"]
-                    and len(reagent_label) not in data[pool]["label_length"]
-                ):
-                    common_index = next(iter(data[pool]["label_length"]))
-                    message.append(
-                        f"LABEL LENGTH WARNING: Multiple label lengths noticed in pool {pool} for Sample {sample_id}, length {len(reagent_label)} is different from {common_index}"
-                    )
-                else:
-                    data[pool]["label_length"].add(len(reagent_label))
-
-                # Validate the reagent label
-                message.extend(
-                    validate_reagent_label(reagent_label, sample_id, pool, data)
+                # Validate the reagent label and get the resolved index
+                validation_msgs = validate_reagent_label(
+                    reagent_label, sample_id, pool, data
                 )
+                message.extend(validation_msgs)
+
+    # Validate label lengths in each pool
+    for pool, pool_data in data.items():
+        message.extend(validate_pool_label_lengths(pool, pool_data))
 
     # Validate sample numbering within plates
     message.extend(validate_plate_sequences(plates))
