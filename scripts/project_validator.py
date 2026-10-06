@@ -42,7 +42,7 @@ class WellData(TypedDict):
 
 
 def verify_samplename(sample_name: str, proj_id: str) -> list[str]:
-    message = []
+    message: list[str] = []
     if not NGISAMPLE_PAT.findall(sample_name):
         message.append(f"SAMPLE NAME WARNING: Bad sample name format {sample_name}")
     else:
@@ -89,7 +89,7 @@ def validate_reagent_label(
     reagent_label: str, sample_id: str, pool: str, data: dict[str, WellData]
 ) -> list[str]:
     """Validate a single reagent label and check index distance. Returns messages."""
-    message = []
+    message: list[str] = []
     curr_idx: IndexPair | None = None
 
     if reagent_label == "NoIndex":
@@ -110,8 +110,10 @@ def validate_reagent_label(
             is_smartseq_index = SMARTSEQ_PAT.findall(reagent_label)
             if is_tenx_index:
                 if TENX_SINGLE_PAT.findall(reagent_label):
-                    idx_1 = Chromium_10X_indexes[reagent_label].replace(",", "")
-                    idx_2 = ""
+                    message.append(
+                        f"INDEX FORMAT WARNING: Sample {sample_id} with index '{reagent_label}' is a TENX single index, skipping detailed checks"
+                    )
+                    return message
                 else:
                     idx_1 = Chromium_10X_indexes[reagent_label][0].replace(",", "")
                     idx_2 = "".join(
@@ -127,8 +129,9 @@ def validate_reagent_label(
             # skipping checks for SMARTSEQ indexes for now
             elif is_smartseq_index:
                 message.append(
-                    f"INDEX FORMAT ERROR: Sample {sample_id} with index '{reagent_label}' is a SMARTSEQ index, skipping detailed checks"
+                    f"INDEX FORMAT WARNING: Sample {sample_id} with index '{reagent_label}' is a SMARTSEQ index, skipping detailed checks"
                 )
+                return message
             else:
                 idxs_matches = IDX_PAT.findall(reagent_label)
                 if not idxs_matches:
@@ -203,7 +206,7 @@ def validate_plate_sequences(plates: dict[str, list[int]]) -> list[str]:
 
 def validate_pool_label_lengths(pool: str, pool_data: WellData) -> list[str]:
     """Validate that all resolved indices in a pool have the same combined length."""
-    message = []
+    message: list[str] = []
 
     if not pool_data["labels"]:
         return message
@@ -240,7 +243,7 @@ def validate_pool_label_lengths(pool: str, pool_data: WellData) -> list[str]:
 # Verify sample IDs
 def verify_samples(lims: Lims, project: Project) -> list[str]:
     """Validate project sample IDs for format, count, and sequence."""
-    message = []
+    message: list[str] = []
     data: dict[str, WellData] = {}
     samples = lims.get_samples(projectname=project.name)
     if not samples:
@@ -324,7 +327,13 @@ def main(lims: Lims, pid: str, auto: bool) -> None:
     project = Project(lims, id=pid)
     # Get all samples in the project
     # Validate sample IDs
-    messages = verify_samples(lims, project)
+    if project.udf.get("Library construction method") == "Finished library (by user)":
+        messages.append(
+            f"Running checks for Project {pid}: Project is marked as 'Finished library (by user)'"
+        )
+        messages = verify_samples(lims, project)
+    else:
+        print(f"Project {pid}: Project is not a user library, skipping sample checks")
 
     if messages:
         resp_email = get_epp_user(lims, project_id=pid).email
